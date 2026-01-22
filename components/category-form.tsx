@@ -1,0 +1,81 @@
+'use client'
+
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+
+interface CategoryFormProps {
+    onSuccess: () => void
+}
+
+export function CategoryForm({ onSuccess }: CategoryFormProps) {
+    const [open, setOpen] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [name, setName] = useState('')
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            })
+
+            if (res.ok) {
+                setName('')
+                setOpen(false)
+                onSuccess()
+            }
+        } catch (error) {
+            console.error('Error creating category:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" className="border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-800 hover:text-white px-6 py-3 rounded-xl">
+                    📁 Yeni Kategori
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white">Yeni Kategori Oluştur</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="categoryName" className="text-zinc-300">Kategori Adı</Label>
+                        <Input
+                            id="categoryName"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Örn: Matematik, Fizik, Tarih..."
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                            required
+                        />
+                    </div>
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl"
+                    >
+                        {loading ? 'Oluşturuluyor...' : 'Oluştur'}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+}

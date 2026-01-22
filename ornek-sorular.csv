@@ -1,0 +1,11 @@
+category,question_text,option_a,option_b,option_c,option_d,correct_answer,solution
+Matematik,"2 + 2 kaçtır?",3,4,5,6,B,"2 + 2 = 4 eder."
+Matematik,"5 x 6 kaçtır?",25,30,35,40,B,"5 çarpı 6 eşittir 30."
+Matematik,"144'ün karekökü kaçtır?",10,11,12,13,C,"12'nin karesi 144'tür (12 x 12 = 144)."
+Fizik,"Işık hızı yaklaşık kaç km/s'dir?","300.000","150.000","450.000","600.000",A,"Işık hızı boşlukta saniyede yaklaşık 300.000 km yol alır."
+Fizik,"Newton'un hangi yasası F=ma formülüdür?",Birinci,İkinci,Üçüncü,Dördüncü,B,"F=ma formülü Newton'un İkinci Hareket Yasasıdır (Temel Yasa)."
+Tarih,"İstanbul hangi yılda fethedildi?",1453,1461,1492,1520,A,"İstanbul, 29 Mayıs 1453 tarihinde Fatih Sultan Mehmet tarafından fethedildi."
+Tarih,"Cumhuriyet hangi tarihte ilan edildi?","29 Ekim 1920","29 Ekim 1923","23 Nisan 1920","19 Mayıs 1919",B,"Cumhuriyet, 29 Ekim 1923'te ilan edilmiştir."
+Biyoloji,"DNA'nın açılımı nedir?","Deoksiribonükleik Asit","Ribonükleik Asit","Amino Asit","Nükleik Asit",A,"DNA, Deoxyribonucleic Acid kelimelerinin kısaltmasıdır."
+Biyoloji,"İnsan vücudunda kaç kemik vardır?",186,206,226,246,B,"Yetişkin bir insanın iskeletinde yaklaşık 206 kemik bulunur."
+Coğrafya,"Türkiye'nin en uzun nehri hangisidir?",Fırat,Dicle,Kızılırmak,Sakarya,C,"Türkiye sınırları içerisindeki en uzun nehir Kızılırmak'tır."
