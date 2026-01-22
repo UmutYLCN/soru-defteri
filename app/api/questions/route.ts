@@ -32,13 +32,13 @@ export async function POST(request: Request) {
 
         const question = await prisma.question.create({
             data: {
-                categoryId: categoryId || null,
-                questionText: questionText.trim(),
-                optionA: optionA.trim(),
-                optionB: optionB.trim(),
-                optionC: optionC.trim(),
-                optionD: optionD.trim(),
-                correctAnswer: correctAnswer.toUpperCase(),
+                categoryId: categoryId ? parseInt(String(categoryId)) : null,
+                questionText: String(questionText).trim(),
+                optionA: String(optionA).trim(),
+                optionB: String(optionB).trim(),
+                optionC: String(optionC).trim(),
+                optionD: String(optionD).trim(),
+                correctAnswer: String(correctAnswer).toUpperCase(),
                 solution: solution?.trim() || null
             },
             include: {
@@ -104,13 +104,13 @@ export async function PUT(request: Request) {
         const question = await prisma.question.update({
             where: { id: questionId },
             data: {
-                categoryId: categoryId || null,
-                questionText: questionText.trim(),
-                optionA: optionA.trim(),
-                optionB: optionB.trim(),
-                optionC: optionC.trim(),
-                optionD: optionD.trim(),
-                correctAnswer: correctAnswer.toUpperCase(),
+                categoryId: categoryId ? parseInt(String(categoryId)) : null,
+                questionText: String(questionText).trim(),
+                optionA: String(optionA).trim(),
+                optionB: String(optionB).trim(),
+                optionC: String(optionC).trim(),
+                optionD: String(optionD).trim(),
+                correctAnswer: String(correctAnswer).toUpperCase(),
                 solution: solution?.trim() || null
             },
             include: {
