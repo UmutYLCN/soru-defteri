@@ -11,6 +11,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+import { FolderPlus, Tag, Loader2 } from 'lucide-react'
 
 interface CategoryFormProps {
     onSuccess: () => void
@@ -47,8 +48,9 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-800 hover:text-white px-6 py-3 rounded-xl">
-                    📁 Yeni Kategori
+                <Button variant="outline" className="border-zinc-700 bg-zinc-800/30 text-zinc-400 hover:bg-zinc-800 hover:text-white px-6 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2">
+                    <FolderPlus className="w-5 h-5" />
+                    <span>Yeni Kategori</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[400px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
@@ -70,9 +72,19 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
                     >
-                        {loading ? 'Oluşturuluyor...' : 'Oluştur'}
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Oluşturuluyor...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Tag className="w-4 h-4" />
+                                <span>Kategori Oluştur</span>
+                            </>
+                        )}
                     </Button>
                 </form>
             </DialogContent>

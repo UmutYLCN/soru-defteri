@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma-client"
 }
 
 datasource db {
@@ -23,7 +22,7 @@ model Question {
   optionC       String
   optionD       String
   correctAnswer String
-  createdAt     DateTime  @default(now())
   solution      String?
+  createdAt     DateTime  @default(now())
   category      Category? @relation(fields: [categoryId], references: [id])
 }

@@ -10,6 +10,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+import { FileUp, Clipboard, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 
 interface CSVImportProps {
     onSuccess: () => void
@@ -121,8 +122,9 @@ export function CSVImport({ onSuccess }: CSVImportProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-800 hover:text-white px-6 py-3 rounded-xl">
-                    📥 CSV İçe Aktar
+                <Button variant="outline" className="border-zinc-700 bg-zinc-800/30 text-zinc-400 hover:bg-zinc-800 hover:text-white px-6 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2">
+                    <FileUp className="w-5 h-5" />
+                    <span>CSV İçe Aktar</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
@@ -137,21 +139,23 @@ export function CSVImport({ onSuccess }: CSVImportProps) {
                     <div className="flex gap-2 p-1 bg-zinc-800/50 rounded-xl">
                         <button
                             onClick={() => setActiveTab('file')}
-                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'file'
-                                ? 'bg-zinc-700 text-white'
+                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'file'
+                                ? 'bg-zinc-700 text-white shadow-sm'
                                 : 'text-zinc-400 hover:text-white'
                                 }`}
                         >
-                            📄 Dosya Yükle
+                            <FileUp className="w-4 h-4" />
+                            <span>Dosya Yükle</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('paste')}
-                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'paste'
-                                ? 'bg-zinc-700 text-white'
+                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'paste'
+                                ? 'bg-zinc-700 text-white shadow-sm'
                                 : 'text-zinc-400 hover:text-white'
                                 }`}
                         >
-                            📋 Yapıştır
+                            <Clipboard className="w-4 h-4" />
+                            <span>Yapıştır</span>
                         </button>
                     </div>
 
@@ -187,12 +191,14 @@ export function CSVImport({ onSuccess }: CSVImportProps) {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="text-4xl mb-3">📄</div>
-                                    <p className="text-white font-medium mb-1">
+                                    <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <FileUp className="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <p className="text-white font-semibold mb-1">
                                         CSV dosyasını sürükleyip bırakın
                                     </p>
                                     <p className="text-zinc-500 text-sm">
-                                        veya <span className="text-emerald-400 underline">dosya seçmek için tıklayın</span>
+                                        veya <span className="text-emerald-400 font-medium">dosya seçmek için tıklayın</span>
                                     </p>
                                 </>
                             )}
@@ -214,9 +220,19 @@ Fizik,"Işık hızı kaç km/s?","300.000","150.000","450.000","600.000",A,"Iş�
                             <Button
                                 onClick={handlePasteImport}
                                 disabled={loading || !pasteContent.trim()}
-                                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
                             >
-                                {loading ? '⏳ İçe Aktarılıyor...' : '📥 İçe Aktar'}
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>İçe Aktarılıyor...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileUp className="w-4 h-4" />
+                                        <span>İçe Aktar</span>
+                                    </>
+                                )}
                             </Button>
                         </div>
                     )}

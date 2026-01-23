@@ -15,7 +15,8 @@ export function MathText({ text, className }: MathTextProps) {
     // This is a simple parser for demo purposes. 
     // For more complex cases, a library like markdown-it-katex is better.
 
-    const parts = text.split(/(\$\$[\s\S]*?\$\$|\$.*?\$)/g)
+    const normalizedText = text.replace(/\\\$/g, '$')
+    const parts = normalizedText.split(/(\$\$[\s\S]*?\$\$|\$.*?\$)/g)
 
     return (
         <span className={className}>

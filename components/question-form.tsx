@@ -20,6 +20,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { MathText } from './math-text'
+import { Plus, Save, Eye, X } from 'lucide-react'
 
 
 interface Category {
@@ -84,8 +85,9 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                    + Yeni Soru Ekle
+                <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    <span>Yeni Soru</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
@@ -98,9 +100,10 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                         <Select
                             value={formData.categoryId}
                             onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                            required
                         >
                             <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                                <SelectValue placeholder="Kategori seçin (opsiyonel)" />
+                                <SelectValue placeholder="Bir kategori seçin *" />
                             </SelectTrigger>
                             <SelectContent className="bg-zinc-800 border-zinc-700">
                                 {categories.map((cat) => (
@@ -223,9 +226,14 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
                     >
-                        {loading ? 'Kaydediliyor...' : 'Kaydet'}
+                        {loading ? 'Kaydediliyor...' : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                <span>Kaydet</span>
+                            </>
+                        )}
                     </Button>
                 </form>
             </DialogContent>

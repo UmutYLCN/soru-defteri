@@ -7,6 +7,7 @@ import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
 import { CSVImport } from '@/components/csv-import'
 import { CategoryForm } from '@/components/category-form'
+import { AIGenerator } from '@/components/ai-generator'
 import { EditQuestionDialog } from '@/components/edit-question-dialog'
 import {
   Select,
@@ -176,8 +177,25 @@ export default function Home() {
         {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-4 mb-8">
           <QuestionForm categories={categories} onSuccess={fetchData} />
+          <AIGenerator categories={categories} onSuccess={fetchData} />
           <CSVImport onSuccess={fetchData} />
-          <CategoryForm onSuccess={fetchData} />
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              if (confirm('Veritabanını kontrol edip hataları otomatik düzeltmek istiyor musunuz?')) {
+                const res = await fetch('/api/db-check', { method: 'POST' })
+                const data = await res.json()
+                if (data.success) {
+                  alert(`Düzeltme tamamlandı!\nSilinen geçersiz soru: ${data.fixed.invalid}\nSilinen kopya soru: ${data.fixed.duplicates}`)
+                  fetchData()
+                }
+              }
+            }}
+            className="text-zinc-500 hover:text-white hover:bg-zinc-800"
+            title="Veritabanı Sağlık Kontrolü"
+          >
+            🛡️ Kontrol Et
+          </Button>
 
           <div className="flex-1" />
 
@@ -228,6 +246,7 @@ export default function Home() {
         <QuestionTable
           questions={filteredQuestions}
           onEdit={handleEdit}
+          onDelete={fetchData}
         />
       </main>
 
@@ -388,18 +407,45 @@ export default function Home() {
                   borderLeft: '3px solid #10b981',
                   borderRadius: '4px'
                 }}>
-                  <div style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    color: '#059669',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    marginBottom: '6px'
-                  }}>
-                    ÇÖZÜM
-                  </div>
-                  <div style={{ fontSize: '13.5px', lineHeight: '1.5', color: '#4b5563' }}>
-                    <QuestionTextDisplay text={q.solution} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {q.solution.includes('STEP_START') ? (
+                      q.solution.split('STEP_START').filter(Boolean).map((section, index) => {
+                        const [title, ...contentParts] = section.split('STEP_END');
+                        const content = contentParts.join('STEP_END');
+                        return (
+                          <div key={index} style={{ marginBottom: '4px' }}>
+                            {title && (
+                              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#059669', textTransform: 'uppercase', marginBottom: '2px' }}>
+                                {title.trim()}
+                              </div>
+                            )}
+                            <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
+                              <QuestionTextDisplay text={content.trim()} />
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : q.solution.match(/(\d+\.\s*Adım|Adım\s*\d+)/i) ? (
+                      q.solution.split(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/gi).filter(Boolean).map((part, i, arr) => {
+                        if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/i)) {
+                          return (
+                            <div key={i} style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#059669', textTransform: 'uppercase', marginBottom: '1px' }}>
+                                {part.trim().replace(/:$/, '')}
+                              </div>
+                              <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
+                                <QuestionTextDisplay text={arr[i + 1]?.trim() || ''} />
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null;
+                      })
+                    ) : (
+                      <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
+                        <QuestionTextDisplay text={q.solution} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -444,7 +490,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 
@@ -452,8 +498,11 @@ export default function Home() {
 function QuestionTextDisplay({ text }: { text: string }) {
   if (!text) return null;
 
+  // Normalize escaped dollars
+  const normalizedText = text.replace(/\\\$/g, '$')
+
   // Regex to match $...$ or $$...$$
-  const parts = text.split(/(\$\$[\s\S]*?\$\$|\$.*?\$)/g)
+  const parts = normalizedText.split(/(\$\$[\s\S]*?\$\$|\$.*?\$)/g)
 
   return (
     <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
