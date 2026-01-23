@@ -194,9 +194,9 @@ export default function Home() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center group overflow-hidden relative shadow-[0_0_20px_rgba(249,115,22,0.1)]">
+              <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center group relative shadow-[0_0_20px_rgba(249,115,22,0.1)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                   <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2" />
                   <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -251,7 +251,7 @@ export default function Home() {
             onClick={() => setShowImportModal(true)}
             className="bg-zinc-900 border border-zinc-800 text-white hover:bg-zinc-800 hover:border-orange-500/50 font-semibold px-5 py-3 rounded-xl shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
           >
-            📚 NotebookLM Import
+            NotebookLM Import
           </Button>
 
           <div className="flex-1" />
