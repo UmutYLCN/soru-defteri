@@ -24,6 +24,13 @@ model Question {
   optionD       String
   correctAnswer String
   solution      String?
+  // English translations
+  questionTextEN String?
+  optionAEN      String?
+  optionBEN      String?
+  optionCEN      String?
+  optionDEN      String?
+  solutionEN     String?
   createdAt     DateTime  @default(now())
   category      Category? @relation(fields: [categoryId], references: [id])
 }

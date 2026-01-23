@@ -88,15 +88,15 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-violet-500/20 transition-all duration-300 flex items-center gap-2">
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0">
                     <Wand2 className="w-5 h-5" />
                     <span>AI Soru Üret</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white p-0 custom-scrollbar">
-                <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/20 px-6 py-6 border-b border-zinc-800">
+                <div className="bg-orange-500/5 px-6 py-6 border-b border-zinc-800">
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                        <Wand2 className="w-6 h-6 text-violet-400" />
+                        <Wand2 className="w-6 h-6 text-orange-500" />
                         AI Soru Üretici
                     </DialogTitle>
                     <DialogDescription className="text-zinc-400 mt-1">
@@ -113,7 +113,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                         <Textarea
                             id="prompt"
                             placeholder="Örn: Newton'un hareket yasaları hakkında soru üret..."
-                            className="bg-zinc-800/50 border-zinc-700 focus:border-violet-500 focus:ring-violet-500 min-h-[120px] resize-none text-zinc-200 placeholder:text-zinc-600"
+                            className="bg-zinc-800/50 border-zinc-700 focus:border-orange-500/50 focus:ring-orange-500/50 min-h-[120px] resize-none text-zinc-200 placeholder:text-zinc-600"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                         />
@@ -197,7 +197,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                         </Button>
                         <Button
                             onClick={handleGenerate}
-                            className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold h-11"
+                            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 border-0"
                             disabled={loading}
                         >
                             {loading ? (

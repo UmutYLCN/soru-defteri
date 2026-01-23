@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Soru Defteri",
-  description: "Çözdüğünüz soruları kaydedin ve PDF olarak dışa aktarın",
+  title: "NoteDiur",
+  description: "Geometric question tracking and export system.",
 };
 
 export default function RootLayout({

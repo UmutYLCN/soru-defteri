@@ -251,7 +251,7 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                             </div>
                             {formData.solution && (
                                 <div className="mt-2 pt-2 border-t border-zinc-800">
-                                    <Label className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Çözüm Önizleme</Label>
+                                    <Label className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Çözüm Önizleme</Label>
                                     <MathText text={formData.solution} className="text-zinc-300 text-sm block mt-1" />
                                 </div>
                             )}
@@ -263,7 +263,7 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                         <Button
                             type="submit"
                             disabled={loading || deleting}
-                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 rounded-xl"
+                            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl border-0"
                         >
                             {loading ? 'Kaydediliyor...' : '💾 Güncelle'}
                         </Button>

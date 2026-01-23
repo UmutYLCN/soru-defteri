@@ -55,3 +55,98 @@ export async function generateQuestions(prompt: string, count: number, level: st
     }
   }
 }
+
+// Types for NotebookLM import
+interface NotebookQuestion {
+  question: string;
+  answerOptions: {
+    text: string;
+    isCorrect: boolean;
+    rationale: string;
+  }[];
+  hint: string;
+}
+
+interface ProcessedQuestion {
+  questionText: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctAnswer: string;
+  solution: string;
+  questionTextEN: string;
+  optionAEN: string;
+  optionBEN: string;
+  optionCEN: string;
+  optionDEN: string;
+  solutionEN: string;
+}
+
+export async function processNotebookQuestion(q: NotebookQuestion): Promise<ProcessedQuestion> {
+  const correctOption = q.answerOptions.find(opt => opt.isCorrect);
+  const correctText = correctOption?.text || "";
+  const rationale = correctOption?.rationale || "";
+
+  const systemPrompt = `You are an expert physics educator. Process this question for a multiple-choice test.
+
+ORIGINAL QUESTION (Turkish):
+${q.question}
+
+CORRECT ANSWER:
+${correctText}
+
+EXPLANATION:
+${rationale}
+
+HINT:
+${q.hint}
+
+YOUR TASKS:
+1. Create 3 WRONG but plausible answer options (in Turkish). They should be related to the topic but incorrect.
+2. Translate EVERYTHING to English.
+3. Format the solution as step-by-step.
+
+SOLUTION FORMAT RULES:
+- Use: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
+- Keep each step SHORT and DIRECT.
+- Use $...$ for LaTeX math with double backslashes (e.g., \\\\frac{a}{b}).
+
+Return a JSON object with these EXACT fields:
+{
+  "questionText": "Original Turkish question",
+  "optionA": "Correct answer (Turkish)",
+  "optionB": "Wrong option 1 (Turkish)",
+  "optionC": "Wrong option 2 (Turkish)",
+  "optionD": "Wrong option 3 (Turkish)",
+  "correctAnswer": "A",
+  "solution": "Step-by-step solution in Turkish using STEP_START format",
+  "questionTextEN": "English translation of question",
+  "optionAEN": "Correct answer (English)",
+  "optionBEN": "Wrong option 1 (English)",
+  "optionCEN": "Wrong option 2 (English)",
+  "optionDEN": "Wrong option 3 (English)",
+  "solutionEN": "Step-by-step solution in English using STEP_START format"
+}
+
+IMPORTANT: The correct answer is ALWAYS option A. Return ONLY valid JSON.`;
+
+  const result = await geminiModel.generateContent(systemPrompt);
+  const response = await result.response;
+  let text = response.text();
+
+  try {
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleanedText);
+
+    // Ensure optionA is the correct answer from original
+    parsed.optionA = correctText;
+    parsed.correctAnswer = "A";
+
+    return parsed;
+  } catch (e) {
+    console.error("JSON Parse Error in processNotebookQuestion. Raw text:", text);
+    throw new Error("Failed to process question with AI. Please try again.");
+  }
+}
+

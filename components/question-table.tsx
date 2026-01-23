@@ -16,6 +16,12 @@ interface Question {
     optionD: string
     correctAnswer: string
     solution: string | null
+    questionTextEN: string | null
+    optionAEN: string | null
+    optionBEN: string | null
+    optionCEN: string | null
+    optionDEN: string | null
+    solutionEN: string | null
     category: {
         id: number
         name: string
@@ -27,30 +33,16 @@ interface QuestionRowProps {
     index: number
     onEdit: (question: Question) => void
     onDelete: (id: number) => void
+    language: 'tr' | 'en'
 }
 
-function QuestionRow({ question, index, onEdit, onDelete }: QuestionRowProps) {
+function QuestionRow({ question, index, onEdit, onDelete, language }: QuestionRowProps) {
     const [isExpanded, setIsExpanded] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-    const handleDelete = async () => {
-        setIsDeleting(true)
-        try {
-            const res = await fetch(`/api/questions/${question.id}`, { method: 'DELETE' })
-            if (res.ok) {
-                onDelete(question.id)
-                setShowDeleteConfirm(false)
-            }
-        } catch (error) {
-            console.error('Delete failed:', error)
-        } finally {
-            setIsDeleting(false)
-        }
-    }
+
 
     return (
-        <div className={`p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-all duration-300 shadow-sm hover:shadow-md ${isDeleting ? 'opacity-50 grayscale' : ''}`}>
+        <div className={`p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-all duration-300 shadow-sm hover:shadow-md`}>
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                     {/* Question Number & Category */}
@@ -65,82 +57,95 @@ function QuestionRow({ question, index, onEdit, onDelete }: QuestionRowProps) {
 
                     {/* Question Text */}
                     <MathText
-                        text={question.questionText}
+                        text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
                         className="text-white font-medium mb-4 leading-relaxed block text-lg"
                     />
 
                     {/* Options Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {(['A', 'B', 'C', 'D'] as const).map((opt) => (
-                            <div
-                                key={opt}
-                                className={`p-3 rounded-xl transition-all ${question.correctAnswer === opt
-                                    ? 'bg-emerald-500/20 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                                    : 'bg-zinc-800/50 border border-transparent'
-                                    }`}
-                            >
-                                <span className={`flex gap-2 ${question.correctAnswer === opt ? 'text-emerald-400 font-semibold' : 'text-zinc-400'}`}>
-                                    <span className="shrink-0">{opt})</span>
-                                    <MathText text={question[(`option${opt}` as keyof Question)] as string} />
-                                </span>
-                            </div>
-                        ))}
+                        {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                            const optionKey = `option${opt}` as keyof Question
+                            const optionKeyEN = `option${opt}EN` as keyof Question
+                            const optionText = language === 'en' && question[optionKeyEN]
+                                ? question[optionKeyEN] as string
+                                : question[optionKey] as string
+                            return (
+                                <div
+                                    key={opt}
+                                    className={`p-3 rounded-xl transition-all ${question.correctAnswer === opt
+                                        ? 'bg-orange-500/10 border border-orange-500/30'
+                                        : 'bg-zinc-800/50 border border-transparent'
+                                        }`}
+                                >
+                                    <span className={`flex gap-2 ${question.correctAnswer === opt ? 'text-orange-500 font-semibold' : 'text-zinc-400'}`}>
+                                        <span className="shrink-0">{opt})</span>
+                                        <MathText text={optionText} />
+                                    </span>
+                                </div>
+                            )
+                        })}
                     </div>
 
                     {/* Solution Toggle & Content */}
-                    {question.solution && (
+                    {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
                         <div className="mt-4 pt-4 border-t border-zinc-800/50">
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className={`flex items-center gap-2 text-sm font-semibold transition-all group ${isExpanded ? 'text-emerald-400' : 'text-zinc-500 hover:text-emerald-400'
+                                className={`flex items-center gap-2 text-sm font-semibold transition-all group ${isExpanded ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-500'
                                     }`}
                             >
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                {isExpanded ? 'Çözümü Gizle' : 'Çözümü Göster'}
+                                {isExpanded ? (language === 'en' ? 'Hide Solution' : 'Çözümü Gizle') : (language === 'en' ? 'Show Solution' : 'Çözümü Göster')}
                             </button>
 
                             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'mt-4 opacity-100 max-h-[500px]' : 'max-h-0 opacity-0'
                                 }`}>
                                 <div className="p-4 rounded-xl bg-emerald-500/5 border border-zinc-800/50">
                                     <div className="space-y-5">
-                                        {question.solution.includes('STEP_START') ? (
-                                            question.solution.split('STEP_START').filter(Boolean).map((section, i) => {
-                                                const [title, ...contentParts] = section.split('STEP_END');
-                                                const content = contentParts.join('STEP_END');
-                                                return (
-                                                    <div key={i} className="flex flex-col gap-1.5">
-                                                        {title && (
-                                                            <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1.5 opacity-80">
-                                                                {title.trim()}
-                                                            </span>
-                                                        )}
-                                                        <div className="text-zinc-300 leading-relaxed text-sm">
-                                                            <MathText text={content.trim()} />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : question.solution.match(/(\d+\.\s*Adım|Adım\s*\d+)/i) ? (
-                                            question.solution.split(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/gi).filter(Boolean).map((part, i, arr) => {
-                                                if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/i)) {
+                                        {(() => {
+                                            const solutionText = language === 'en' && question.solutionEN ? question.solutionEN : question.solution
+                                            if (!solutionText) return null
+                                            if (solutionText.includes('STEP_START')) {
+                                                return solutionText.split('STEP_START').filter(Boolean).map((section, i) => {
+                                                    const [title, ...contentParts] = section.split('STEP_END');
+                                                    const content = contentParts.join('STEP_END');
                                                     return (
-                                                        <div key={i} className="flex flex-col gap-1">
-                                                            <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter opacity-80">
-                                                                {part.trim().replace(/:$/, '')}
-                                                            </span>
-                                                            <div className="text-zinc-300 leading-relaxed text-sm pl-0">
-                                                                <MathText text={arr[i + 1]?.trim() || ''} />
+                                                        <div key={i} className="flex flex-col gap-1.5">
+                                                            {title && (
+                                                                <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1.5 opacity-80">
+                                                                    {title.trim()}
+                                                                </span>
+                                                            )}
+                                                            <div className="text-zinc-300 leading-relaxed text-sm">
+                                                                <MathText text={content.trim()} />
                                                             </div>
                                                         </div>
-                                                    )
-                                                }
-                                                return null;
-                                            })
-                                        ) : (
-                                            <div className="text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap">
-                                                <MathText text={question.solution} />
-                                            </div>
-                                        )}
+                                                    );
+                                                })
+                                            } else if (solutionText.match(/(\d+\.\s*Adım|Adım\s*\d+|Step\s*\d+)/i)) {
+                                                return solutionText.split(/(\d+\.\s*Adım:?|Adım\s*\d+:?|Step\s*\d+:?)/gi).filter(Boolean).map((part, i, arr) => {
+                                                    if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?|Step\s*\d+:?)/i)) {
+                                                        return (
+                                                            <div key={i} className="flex flex-col gap-1">
+                                                                <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter opacity-80">
+                                                                    {part.trim().replace(/:$/, '')}
+                                                                </span>
+                                                                <div className="text-zinc-300 leading-relaxed text-sm pl-0">
+                                                                    <MathText text={arr[i + 1]?.trim() || ''} />
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    }
+                                                    return null;
+                                                })
+                                            } else {
+                                                return (
+                                                    <div className="text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap">
+                                                        <MathText text={solutionText} />
+                                                    </div>
+                                                )
+                                            }
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -148,38 +153,19 @@ function QuestionRow({ question, index, onEdit, onDelete }: QuestionRowProps) {
                     )}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex flex-col gap-2">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(question)}
-                        className="text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 shrink-0 h-9 w-9 rounded-xl transition-all"
+                        className="text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 shrink-0 h-9 w-9 rounded-xl transition-all"
                         title="Düzenle"
                     >
                         <Edit2 className="w-4 h-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 shrink-0 h-9 w-9 rounded-xl transition-all"
-                        title="Sil"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
-
-                    <ConfirmDialog
-                        open={showDeleteConfirm}
-                        onOpenChange={setShowDeleteConfirm}
-                        onConfirm={handleDelete}
-                        loading={isDeleting}
-                        title="Soruyu Sil"
-                        description="Bu soruyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
-                    />
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
 
@@ -187,9 +173,10 @@ interface QuestionTableProps {
     questions: Question[]
     onEdit: (question: Question) => void
     onDelete: () => void
+    language: 'tr' | 'en'
 }
 
-export function QuestionTable({ questions, onEdit, onDelete }: QuestionTableProps) {
+export function QuestionTable({ questions, onEdit, onDelete, language }: QuestionTableProps) {
     const [search, setSearch] = useState('')
 
     const filtered = questions.filter(q =>
@@ -213,7 +200,7 @@ export function QuestionTable({ questions, onEdit, onDelete }: QuestionTableProp
                 <input
                     type="text"
                     placeholder="Sorularda veya kategorilerde ara..."
-                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-5 py-3 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-5 py-3 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -232,6 +219,7 @@ export function QuestionTable({ questions, onEdit, onDelete }: QuestionTableProp
                             index={index}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            language={language}
                         />
                     ))}
                 </div>

@@ -72,7 +72,7 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 rounded-xl shadow-lg shadow-orange-950/20 flex items-center justify-center gap-2 border-0"
                     >
                         {loading ? (
                             <>

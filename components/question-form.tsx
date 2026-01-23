@@ -85,7 +85,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 flex items-center gap-2">
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0">
                     <Plus className="w-5 h-5" />
                     <span>Yeni Soru</span>
                 </Button>
@@ -215,7 +215,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                             </div>
                             {formData.solution && (
                                 <div className="mt-2 pt-2 border-t border-zinc-800">
-                                    <Label className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Çözüm Önizleme</Label>
+                                    <Label className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Çözüm Önizleme</Label>
                                     <MathText text={formData.solution} className="text-zinc-300 text-sm block mt-1" />
                                 </div>
                             )}
@@ -226,7 +226,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 rounded-xl shadow-lg shadow-orange-950/20 flex items-center justify-center gap-2 border-0"
                     >
                         {loading ? 'Kaydediliyor...' : (
                             <>
