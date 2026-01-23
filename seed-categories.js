@@ -1,4 +1,4 @@
-require('dotenv').config();
+// Prisma Client loads .env automatically
 const { PrismaClient } = require('@prisma/client');
 
 async function main() {
