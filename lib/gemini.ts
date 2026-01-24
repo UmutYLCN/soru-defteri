@@ -11,6 +11,34 @@ export const geminiModel = genAI.getGenerativeModel({
 
 
 
+
+export async function verifyAndFixQuestion(q: any): Promise<any> {
+  const verifyPrompt = `You are a strict academic auditor. Review the following multiple-choice question for logical consistency and mathematical accuracy.
+
+QUESTION DATA:
+${JSON.stringify(q, null, 2)}
+
+YOUR TASKS:
+1. Re-calculate everything from scratch based on the question text.
+2. Check if the "correctAnswer" actually corresponds to the correct mathematical result.
+3. Check the "solution" steps. If there are apologies like "işaret hatası varsayılır" or "seçeneklerde yok", REMOVE THEM.
+4. If the options are wrong, CHANGE THEM to include the correct answer.
+5. Ensure the final result is clean, professional, and mathematically perfect.
+
+Return the corrected question data in the EXACT same JSON format as the input. Return ONLY the JSON object.`;
+
+  try {
+    const result = await geminiModel.generateContent(verifyPrompt);
+    const response = await result.response;
+    const text = response.text();
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanedText);
+  } catch (error) {
+    console.error("Verification Error:", error);
+    return q; // Fallback to original if verification fails
+  }
+}
+
 export async function generateQuestions(prompt: string, count: number, level: string, language: string) {
   const systemPrompt = `You are an expert educational content creator. Generate ${count} multiple-choice questions based on the following context/topic: "${prompt}".
   
@@ -46,7 +74,14 @@ export async function generateQuestions(prompt: string, count: number, level: st
   try {
     // Clean up potential markdown formatting just in case
     const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleanedText);
+    const questions = JSON.parse(cleanedText);
+
+    // Step 2: Verification & Correction
+    const verifiedQuestions = await Promise.all(
+      questions.map((q: any) => verifyAndFixQuestion(q))
+    );
+
+    return verifiedQuestions;
   } catch (e) {
     console.error("JSON Parse Error. Raw text:", text);
     // Fallback: try to fix common escaping issues and potential multiple 'solution' keys if possible
@@ -149,7 +184,9 @@ IMPORTANT: The correct answer is ALWAYS option A. Ensure the "solution" leads to
     parsed.optionA = correctText;
     parsed.correctAnswer = "A";
 
-    return parsed;
+    // Step 2: Verification & Correction
+    const verified = await verifyAndFixQuestion(parsed);
+    return verified;
   } catch (e) {
     console.error("JSON Parse Error in processNotebookQuestion. Raw text:", text);
     throw new Error("Failed to process question with AI. Please try again.");
