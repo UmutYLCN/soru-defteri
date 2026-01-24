@@ -26,14 +26,18 @@ export async function generateQuestions(prompt: string, count: number, level: st
   3. Format: Return a valid JSON array of objects.
   4. Each object must have these field names: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution.
   5. Strictly provide exactly 4 options (A, B, C, D). Do NOT provide more or fewer options.
-  6. The "solution" field MUST be CONCISE and STEP-BY-STEP. 
-     - NO long paragraphs.
-     - Each step must be short and direct.
+  6. **LOGIC & ACCURACY:**
+     - You MUST solve the question yourself first.
+     - The "correctAnswer" MUST correspond to the mathematically/logically correct option.
+     - Ensure all options are distinct and only ONE is correct.
+  7. **SOLUTION FORMAT:**
+     - The "solution" field MUST be CONCISE and STEP-BY-STEP. 
+     - NO long paragraphs or unnecessary apologies.
      - Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
-     - Example: "solution": "STEP_START Adım 1: Formül STEP_END $F=m \\\\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\\\cdot 5 = 10N$."
+     - Example: "solution": "STEP_START Adım 1: Formül STEP_END $F=m \\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\cdot 5 = 10N$."
      - Use $...$ for ALL math with double backslashes for LaTeX (e.g., \\\\frac{a}{b}).
   
-  IMPORTANT: Return ONLY the JSON array. Do not include any text outside the JSON array.`;
+  IMPORTANT: Double-check that your "correctAnswer" (A, B, C, or D) actually matches the result in your "solution". Return ONLY the JSON array. Do not include any text outside the JSON array.`;
 
   const result = await geminiModel.generateContent(systemPrompt);
   const response = await result.response;
@@ -105,22 +109,24 @@ ${q.hint}
 YOUR TASKS:
 1. Create 3 WRONG but plausible answer options (in Turkish). They should be related to the topic but incorrect.
 2. Translate EVERYTHING to English.
-3. Format the solution as step-by-step.
+3. **LOGIC CHECK:** Solve the question independently. If the ORIGINAL EXPLANATION or HINT is incorrect, fix it in your output. The question, options, and solution MUST be logically consistent.
+4. Format the solution as step-by-step.
 
 SOLUTION FORMAT RULES:
 - Use: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
 - Keep each step SHORT and DIRECT.
 - Use $...$ for LaTeX math with double backslashes (e.g., \\\\frac{a}{b}).
+- DO NOT add extra explanations or apologies for previous errors. Just provide the correct, clean result.
 
 Return a JSON object with these EXACT fields:
 {
-  "questionText": "Original Turkish question",
+  "questionText": "Corrected Turkish question",
   "optionA": "Correct answer (Turkish)",
   "optionB": "Wrong option 1 (Turkish)",
   "optionC": "Wrong option 2 (Turkish)",
   "optionD": "Wrong option 3 (Turkish)",
   "correctAnswer": "A",
-  "solution": "Step-by-step solution in Turkish using STEP_START format",
+  "solution": "Logical step-by-step solution in Turkish using STEP_START format",
   "questionTextEN": "English translation of question",
   "optionAEN": "Correct answer (English)",
   "optionBEN": "Wrong option 1 (English)",
@@ -129,7 +135,7 @@ Return a JSON object with these EXACT fields:
   "solutionEN": "Step-by-step solution in English using STEP_START format"
 }
 
-IMPORTANT: The correct answer is ALWAYS option A. Return ONLY valid JSON.`;
+IMPORTANT: The correct answer is ALWAYS option A. Ensure the "solution" leads to option A. Return ONLY valid JSON.`;
 
   const result = await geminiModel.generateContent(systemPrompt);
   const response = await result.response;
