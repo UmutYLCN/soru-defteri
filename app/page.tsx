@@ -63,7 +63,7 @@ export default function Home() {
   const [importCategory, setImportCategory] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (newLang?: 'tr' | 'en') => {
     try {
       const [questionsRes, categoriesRes] = await Promise.all([
         fetch('/api/questions'),
@@ -75,6 +75,7 @@ export default function Home() {
 
       setQuestions(questionsData)
       setCategories(categoriesData)
+      if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -243,8 +244,8 @@ export default function Home() {
       <main className="container mx-auto px-6 py-8">
         {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-4 mb-8">
-          <QuestionForm categories={categories} onSuccess={fetchData} />
-          <AIGenerator categories={categories} onSuccess={fetchData} />
+          <QuestionForm categories={categories} onSuccess={() => fetchData()} />
+          <AIGenerator categories={categories} onSuccess={(lang) => fetchData(lang)} />
 
           {/* NotebookLM Import Button */}
           <Button

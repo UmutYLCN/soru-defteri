@@ -28,6 +28,13 @@ export async function POST(req: Request) {
                         optionD: q.optionD,
                         correctAnswer: q.correctAnswer,
                         solution: q.solution,
+                        // English translations
+                        questionTextEN: q.questionTextEN,
+                        optionAEN: q.optionAEN,
+                        optionBEN: q.optionBEN,
+                        optionCEN: q.optionCEN,
+                        optionDEN: q.optionDEN,
+                        solutionEN: q.solutionEN,
                         categoryId: categoryId ? parseInt(categoryId) : null,
                     },
                 })

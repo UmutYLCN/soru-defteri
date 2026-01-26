@@ -28,7 +28,7 @@ interface Category {
 
 interface AIGeneratorProps {
     categories: Category[]
-    onSuccess: () => void
+    onSuccess: (lang?: 'tr' | 'en') => void
 }
 
 export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
@@ -74,7 +74,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                 throw new Error(data.error || 'Bir hata oluştu')
             }
 
-            onSuccess()
+            onSuccess(language === 'İngilizce' ? 'en' : 'tr')
             setOpen(false)
             setPrompt('')
             setError(null)

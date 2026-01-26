@@ -50,16 +50,22 @@ export async function generateQuestions(prompt: string, count: number, level: st
 
   Requirements:
   1. Difficulty Level: ${level}
-  2. Language: ${language}
+  2. Main Language: ${language}
   3. Format: Return a valid JSON array of objects.
-  4. Each object must have these field names: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution.
+  4. Each object must have these field names: 
+     questionText, optionA, optionB, optionC, optionD, correctAnswer, solution,
+     questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
   5. Strictly provide exactly 4 options (A, B, C, D). Do NOT provide more or fewer options.
-  6. **LOGIC & ACCURACY:**
+  6. **DUAL LANGUAGE REQUIREMENT:**
+     - Generate the primary content in ${language}.
+     - If the primary language is NOT English, provide an accurate English translation in the "EN" fields.
+     - If the primary language IS English, provide an accurate Turkish translation in the non-EN fields.
+  7. **LOGIC & ACCURACY:**
      - You MUST solve the question yourself first.
-     - The "correctAnswer" MUST correspond to the mathematically/logically correct option.
+     - The "correctAnswer" MUST correspond to the mathematically/logically correct option (e.g., "A").
      - Ensure all options are distinct and only ONE is correct.
-  7. **SOLUTION FORMAT:**
-     - The "solution" field MUST be CONCISE and STEP-BY-STEP. 
+  8. **SOLUTION FORMAT:**
+     - The "solution" and "solutionEN" fields MUST be CONCISE and STEP-BY-STEP. 
      - NO long paragraphs or unnecessary apologies.
      - Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
      - Example: "solution": "STEP_START Adım 1: Formül STEP_END $F=m \\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\cdot 5 = 10N$."
