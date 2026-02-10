@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         const category = await prisma.category.create({
             data: {
                 name: name.trim(),
-                parentId: parentId ? parseInt(parentId) : null
+                parentId: parentId ? parseInt(String(parentId)) : null
             }
         })
 

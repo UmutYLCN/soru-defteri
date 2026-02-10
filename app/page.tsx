@@ -259,7 +259,7 @@ export default function Home() {
       </div>
 
       {/* Premium Floating Header - Brand Colors */}
-      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-6xl">
+      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-6xl">
         <div className="bg-zinc-950/80 border border-white/5 backdrop-blur-xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4 group cursor-pointer">

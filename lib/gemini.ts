@@ -1,41 +1,60 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
-
-export const geminiModel = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-lite-preview-09-2025",
+const geminiModel = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
   generationConfig: {
     responseMimeType: "application/json",
-  },
+  }
 });
 
+// Initialize OpenAI
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+}) : null;
 
-
-
+/**
+ * Verifies and fixes a question using either GPT-4o-mini (preferred) or Gemini.
+ * Strictly prevents inner monologues about corrections in the solution text.
+ */
 export async function verifyAndFixQuestion(q: any): Promise<any> {
   const verifyPrompt = `You are a strict academic auditor. Review the following multiple-choice question for logical consistency and mathematical accuracy.
 
-QUESTION DATA:
-${JSON.stringify(q, null, 2)}
+    QUESTION DATA:
+    ${JSON.stringify(q, null, 2)}
 
-YOUR TASKS:
-1. Re-calculate everything from scratch based on the question text.
-2. Check if the "correctAnswer" actually corresponds to the correct mathematical result.
-3. Check the "solution" steps. If there are apologies like "işaret hatası varsayılır" or "seçeneklerde yok", REMOVE THEM.
-4. If the options are wrong, CHANGE THEM to include the correct answer.
-5. Ensure the final result is clean, professional, and mathematically perfect.
+    YOUR TASKS:
+    1. Re-calculate everything from scratch based on the question text.
+    2. Check if the "correctAnswer" actually corresponds to the correct mathematical result.
+    3. REMOVE ALL "INNER MONOLOGUE": No "I noticed a mistake", "Updated to match options", "Oops", or "Correction".
+    4. The "solution" must ONLY contain step-by-step instructions.
+    5. If there is a mistake, FIX IT SILENTLY in the options and solution.
+    6. Ensure the final result is clean, professional, and mathematically perfect.
+    7. Return NO apologies, NO metadata, NO comments.
 
-Return the corrected question data in the EXACT same JSON format as the input. Return ONLY the JSON object.`;
+    Return the corrected question data in the EXACT same JSON format as the input. Return ONLY the JSON object.`;
 
   try {
-    const result = await geminiModel.generateContent(verifyPrompt);
-    const response = await result.response;
-    const text = response.text();
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleanedText);
+    if (openai) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: verifyPrompt }],
+        response_format: { type: "json_object" }
+      });
+      const content = response.choices[0].message.content;
+      return JSON.parse(content || "{}");
+    } else {
+      const result = await geminiModel.generateContent(verifyPrompt);
+      const response = await result.response;
+      const text = response.text();
+      const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      return JSON.parse(cleanedText);
+    }
   } catch (error) {
     console.error("Verification Error:", error);
-    return q; // Fallback to original if verification fails
+    return q;
   }
 }
 
@@ -91,102 +110,94 @@ FORMAT REQUIREMENTS:
 2. Each object fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN
 3. ALWAYS provide BOTH Turkish AND English versions.
 4. Exactly 4 options (A, B, C, D), only ONE correct.
+5. NO INNER MONOLOGUE: Do not include phrases like "I simplified the values" or "Correct answer updated".
 
 SOLUTION FORMAT:
 - Must be CONCISE, STEP-BY-STEP.
 - Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Explanation & Calculation]
 - Use $...$ for ALL math with double backslashes for LaTeX.
 - NO apologies, NO unnecessary commentary. Just clean, professional solutions.
-- Example: "STEP_START Adım 1: Formül STEP_END $F=m \\\\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\\\cdot 5 = 10$ N."
-
-QUALITY CHECKLIST (verify before returning):
-✓ Each correctAnswer matches the actual solution result
-✓ All 4 options are distinct
-✓ Wrong options come from realistic mistakes
-✓ Solutions are mathematically/logically flawless
-✓ Both TR and EN versions are accurate translations
+- Example: "STEP_START Adım 1: Formül STEP_END $F=m \\\\\\\\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\\\\\\\cdot 5 = 10$ N."
 
 Return ONLY the JSON array. No extra text.`;
 
-  const result = await geminiModel.generateContent(systemPrompt);
-  const response = await result.response;
-  let text = response.text();
-
+  let text = "";
   try {
+    if (openai) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: systemPrompt }],
+        response_format: { type: "json_object" }
+      });
+      text = response.choices[0].message.content || "[]";
+      if (text.startsWith("{") && !text.includes("[")) {
+        // Extract array if GPT wraps it in an object
+        const parsed = JSON.parse(text);
+        text = JSON.stringify(Object.values(parsed)[0]);
+      }
+    } else {
+      const result = await geminiModel.generateContent(systemPrompt);
+      text = result.response.text();
+    }
+
     const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const questions = JSON.parse(cleanedText);
+    const arrayQuestions = Array.isArray(questions) ? questions : (questions.questions || []);
 
-    // Step 2: Verification & Correction
     const verifiedQuestions = await Promise.all(
-      questions.map((q: any) => verifyAndFixQuestion(q))
+      arrayQuestions.map((q: any) => verifyAndFixQuestion(q))
     );
 
     return verifiedQuestions;
   } catch (e) {
-    console.error("JSON Parse Error. Raw text:", text);
-    const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
-    try {
-      return JSON.parse(fixedText);
-    } catch (innerError) {
-      throw new Error("Model generated invalid JSON structure. Please try again.");
-    }
+    console.error("Question Generation Error:", e);
+    throw e;
   }
 }
-
 
 export async function generateGroupedQuestions(prompt: string, subQuestionCount: number) {
   const systemPrompt = `You are a world-class exam question writer for Turkish university-level courses (midterm/final exam standard).
 
-Your task: Create an INTEGRATED/GROUPED question set based on: "${prompt}"
+YOUR TASK: Create an INTEGRATED/GROUPED question set based on: "${prompt}"
 
 This is the "Soru X-Y" format used in Turkish university exams where:
 - There is ONE shared scenario/context (stem text) that describes a physical setup, circuit, diagram, or situation.
 - Multiple sub-questions (${subQuestionCount}) are derived from that SAME scenario.
-- Each sub-question explores a DIFFERENT aspect of the same problem.
-- Sub-questions may build on each other (e.g., Q1 finds current, Q2 uses that to find voltage).
+- Sub-questions may build on each other.
 
 REQUIREMENTS:
-1. Create a rich, detailed stem/scenario text that provides enough context for all sub-questions.
-2. The stem should describe a specific physical/mathematical setup (like a circuit, a charge distribution, a mechanical system, etc.)
-3. Each sub-question should ask about a DIFFERENT quantity, relationship, or condition within the same scenario.
-4. Sub-questions should progress in complexity (first easier, last harder).
-5. Each sub-question has exactly 4 options (A, B, C, D) and ONE correct answer.
+1. Create a rich, detailed stem/scenario text (stemText and stemTextEN).
+2. Create ${subQuestionCount} sub-questions (questions array).
+3. Each sub-question has 4 options and ONE correct answer.
+4. NO INNER MONOLOGUE in solution or text.
 
-DISTRACTOR ENGINEERING:
-- Wrong options should come from common student mistakes (sign errors, wrong formulas, unit errors).
-
-SOLUTION FORMAT:
-- STEP_START Adim [No]: [Kisa Baslik] STEP_END [Explanation and Calculation]
-- Use $...$ for LaTeX math with double backslashes.
-
-Return a JSON object with this EXACT structure:
+Return a JSON object:
 {
-  "stemText": "Turkish stem/scenario text describing the shared context",
-  "stemTextEN": "English translation of the stem",
+  "stemText": "...",
+  "stemTextEN": "...",
   "questions": [
     {
-      "questionText": "Sub-question 1 in Turkish (just the question, NOT the stem)",
-      "optionA": "...", "optionB": "...", "optionC": "...", "optionD": "...",
-      "correctAnswer": "A or B or C or D",
-      "solution": "Step-by-step solution in Turkish",
-      "questionTextEN": "English translation",
-      "optionAEN": "...", "optionBEN": "...", "optionCEN": "...", "optionDEN": "...",
-      "solutionEN": "English solution"
+      "questionText": "...", "optionA": "...", ..., "correctAnswer": "A", "solution": "...",
+      "questionTextEN": "...", ...
     }
   ]
-}
-
-IMPORTANT:
-- The "stemText" contains the SHARED context only.
-- Each "questionText" contains ONLY the specific sub-question, NOT the stem.
-- Verify all answers are correct. Return ONLY valid JSON.`;
-
-  const result = await geminiModel.generateContent(systemPrompt);
-  const response = await result.response;
-  let text = response.text();
+}`;
 
   try {
-    const cleanedText = text.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+    let text = "";
+    if (openai) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: systemPrompt }],
+        response_format: { type: "json_object" }
+      });
+      text = response.choices[0].message.content || "";
+    } else {
+      const result = await geminiModel.generateContent(systemPrompt);
+      text = result.response.text();
+    }
+
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleanedText);
 
     const verifiedQuestions = await Promise.all(
@@ -199,21 +210,10 @@ IMPORTANT:
       questions: verifiedQuestions
     };
   } catch (e) {
-    console.error("JSON Parse Error in generateGroupedQuestions. Raw text:", text);
-    const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
-    try {
-      const parsed = JSON.parse(fixedText);
-      return {
-        stemText: parsed.stemText,
-        stemTextEN: parsed.stemTextEN,
-        questions: parsed.questions
-      };
-    } catch (innerError) {
-      throw new Error("Model generated invalid JSON structure. Please try again.");
-    }
+    console.error("Grouped Generation Error:", e);
+    throw e;
   }
 }
-
 
 // Types for NotebookLM import
 interface NotebookQuestion {
@@ -221,161 +221,41 @@ interface NotebookQuestion {
   answerOptions: {
     text: string;
     isCorrect: boolean;
-    rationale: string;
   }[];
-  hint: string;
 }
 
-interface ProcessedQuestion {
-  questionText: string;
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
-  correctAnswer: string;
-  solution: string;
-  questionTextEN: string;
-  optionAEN: string;
-  optionBEN: string;
-  optionCEN: string;
-  optionDEN: string;
-  solutionEN: string;
-}
-
-export async function processNotebookQuestion(q: NotebookQuestion): Promise<ProcessedQuestion> {
-  const correctOption = q.answerOptions.find(opt => opt.isCorrect);
-  const correctText = correctOption?.text || "";
-  const rationale = correctOption?.rationale || "";
-
-  const systemPrompt = `You are an expert physics educator. Process this question for a multiple-choice test.
-
-ORIGINAL QUESTION (Turkish):
-${q.question}
-
-CORRECT ANSWER:
-${correctText}
-
-EXPLANATION:
-${rationale}
-
-HINT:
-${q.hint}
-
-YOUR TASKS:
-1. Create 3 WRONG but plausible answer options (in Turkish). They should be related to the topic but incorrect.
-2. Translate EVERYTHING to English.
-3. **LOGIC CHECK:** Solve the question independently. If the ORIGINAL EXPLANATION or HINT is incorrect, fix it in your output. The question, options, and solution MUST be logically consistent.
-4. Format the solution as step-by-step.
-
-SOLUTION FORMAT RULES:
-- Use: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
-- Keep each step SHORT and DIRECT.
-- Use $...$ for LaTeX math with double backslashes (e.g., \\\\frac{a}{b}).
-- DO NOT add extra explanations or apologies for previous errors. Just provide the correct, clean result.
-
-Return a JSON object with these EXACT fields:
-{
-  "questionText": "Corrected Turkish question",
-  "optionA": "Correct answer (Turkish)",
-  "optionB": "Wrong option 1 (Turkish)",
-  "optionC": "Wrong option 2 (Turkish)",
-  "optionD": "Wrong option 3 (Turkish)",
-  "correctAnswer": "A",
-  "solution": "Logical step-by-step solution in Turkish using STEP_START format",
-  "questionTextEN": "English translation of question",
-  "optionAEN": "Correct answer (English)",
-  "optionBEN": "Wrong option 1 (English)",
-  "optionCEN": "Wrong option 2 (English)",
-  "optionDEN": "Wrong option 3 (English)",
-  "solutionEN": "Step-by-step solution in English using STEP_START format"
-}
-
-IMPORTANT: The correct answer is ALWAYS option A. Ensure the "solution" leads to option A. Return ONLY valid JSON.`;
-
-  const result = await geminiModel.generateContent(systemPrompt);
-  const response = await result.response;
-  let text = response.text();
+export async function processNotebookQuestion(q: NotebookQuestion) {
+  const prompt = `Convert the following question and answer options into a professional university-level multiple-choice question format.
+  
+  QUESTION: ${q.question}
+  OPTIONS: ${q.answerOptions.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt.text} ${opt.isCorrect ? '(CORRECT)' : ''}`).join('\n')}
+  
+  TASK:
+  1. Refine the question text to be more formal and academic.
+  2. Create a step-by-step professional solution.
+  3. Ensure BOTH Turkish AND English versions are provided.
+  4. Format the solution using: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Açıklama]
+  5. Use LaTeX for math.
+  
+  Return ONLY a JSON object with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN`;
 
   try {
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleanedText);
-
-    // Ensure optionA is the correct answer from original
-    parsed.optionA = correctText;
-    parsed.correctAnswer = "A";
-
-    // Step 2: Verification & Correction
-    const verified = await verifyAndFixQuestion(parsed);
-    return verified;
-  } catch (e) {
-    console.error("JSON Parse Error in processNotebookQuestion. Raw text:", text);
-    throw new Error("Failed to process question with AI. Please try again.");
-  }
-}
-
-
-export async function generateVariants(question: {
-  questionText: string;
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
-  correctAnswer: string;
-  solution: string | null;
-  questionTextEN: string | null;
-  optionAEN: string | null;
-  optionBEN: string | null;
-  optionCEN: string | null;
-  optionDEN: string | null;
-  solutionEN: string | null;
-}, count: number) {
-  const systemPrompt = `You are an expert educational content creator. You are given an ORIGINAL multiple-choice question. Your task is to generate ${count} NEW variant questions that are SIMILAR in topic, difficulty, and style, but use DIFFERENT numbers, scenarios, or contexts.
-
-ORIGINAL QUESTION:
-Question: ${question.questionText}
-A) ${question.optionA}
-B) ${question.optionB}
-C) ${question.optionC}
-D) ${question.optionD}
-Correct Answer: ${question.correctAnswer}
-Solution: ${question.solution || "N/A"}
-
-RULES:
-1. Each variant MUST test the SAME concept/topic as the original.
-2. Use DIFFERENT numerical values, names, or scenarios for each variant.
-3. Difficulty level should remain the SAME as the original.
-4. Each variant must be solvable and logically correct.
-5. Provide both Turkish AND English versions.
-6. The correct answer letter (A/B/C/D) should VARY across variants - don't always make the same letter correct.
-7. Format solutions using: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Explanation & Calculation]
-8. Use $...$ for LaTeX math with double backslashes.
-
-Return a JSON array of ${count} objects, each with these fields:
-questionText, optionA, optionB, optionC, optionD, correctAnswer, solution,
-questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN
-
-IMPORTANT: Double-check that each "correctAnswer" matches the actual solution. Return ONLY the JSON array.`;
-
-  const result = await geminiModel.generateContent(systemPrompt);
-  const response = await result.response;
-  let text = response.text();
-
-  try {
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    const questions = JSON.parse(cleanedText);
-
-    const verifiedQuestions = await Promise.all(
-      questions.map((q: any) => verifyAndFixQuestion(q))
-    );
-
-    return verifiedQuestions;
-  } catch (e) {
-    console.error("JSON Parse Error in generateVariants. Raw text:", text);
-    const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
-    try {
-      return JSON.parse(fixedText);
-    } catch (innerError) {
-      throw new Error("Model generated invalid JSON structure. Please try again.");
+    let text = "";
+    if (openai) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      });
+      text = response.choices[0].message.content || "";
+    } else {
+      const result = await geminiModel.generateContent(prompt);
+      text = result.response.text();
     }
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanedText);
+  } catch (error) {
+    console.error("Error processing notebook question:", error);
+    return null;
   }
 }
