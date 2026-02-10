@@ -199,3 +199,69 @@ IMPORTANT: The correct answer is ALWAYS option A. Ensure the "solution" leads to
   }
 }
 
+
+export async function generateVariants(question: {
+  questionText: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctAnswer: string;
+  solution: string | null;
+  questionTextEN: string | null;
+  optionAEN: string | null;
+  optionBEN: string | null;
+  optionCEN: string | null;
+  optionDEN: string | null;
+  solutionEN: string | null;
+}, count: number) {
+  const systemPrompt = `You are an expert educational content creator. You are given an ORIGINAL multiple-choice question. Your task is to generate ${count} NEW variant questions that are SIMILAR in topic, difficulty, and style, but use DIFFERENT numbers, scenarios, or contexts.
+
+ORIGINAL QUESTION:
+Question: ${question.questionText}
+A) ${question.optionA}
+B) ${question.optionB}
+C) ${question.optionC}
+D) ${question.optionD}
+Correct Answer: ${question.correctAnswer}
+Solution: ${question.solution || "N/A"}
+
+RULES:
+1. Each variant MUST test the SAME concept/topic as the original.
+2. Use DIFFERENT numerical values, names, or scenarios for each variant.
+3. Difficulty level should remain the SAME as the original.
+4. Each variant must be solvable and logically correct.
+5. Provide both Turkish AND English versions.
+6. The correct answer letter (A/B/C/D) should VARY across variants - don't always make the same letter correct.
+7. Format solutions using: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Explanation & Calculation]
+8. Use $...$ for LaTeX math with double backslashes.
+
+Return a JSON array of ${count} objects, each with these fields:
+questionText, optionA, optionB, optionC, optionD, correctAnswer, solution,
+questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN
+
+IMPORTANT: Double-check that each "correctAnswer" matches the actual solution. Return ONLY the JSON array.`;
+
+  const result = await geminiModel.generateContent(systemPrompt);
+  const response = await result.response;
+  let text = response.text();
+
+  try {
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const questions = JSON.parse(cleanedText);
+
+    const verifiedQuestions = await Promise.all(
+      questions.map((q: any) => verifyAndFixQuestion(q))
+    );
+
+    return verifiedQuestions;
+  } catch (e) {
+    console.error("JSON Parse Error in generateVariants. Raw text:", text);
+    const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
+    try {
+      return JSON.parse(fixedText);
+    } catch (innerError) {
+      throw new Error("Model generated invalid JSON structure. Please try again.");
+    }
+  }
+}

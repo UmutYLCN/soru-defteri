@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MathText } from './math-text'
-import { Trash2, Edit2, ChevronDown } from 'lucide-react'
+import { Trash2, Edit2, ChevronDown, Copy, Loader2, Check, X } from 'lucide-react'
 import { ConfirmDialog } from './confirm-dialog'
 
 
@@ -33,13 +33,57 @@ interface QuestionRowProps {
     index: number
     onEdit: (question: Question) => void
     onDelete: (id: number) => void
+    onVariantsGenerated: () => void
     language: 'tr' | 'en'
 }
 
-function QuestionRow({ question, index, onEdit, onDelete, language }: QuestionRowProps) {
+function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, language }: QuestionRowProps) {
     const [isExpanded, setIsExpanded] = useState(false)
+    const [showVariantPopover, setShowVariantPopover] = useState(false)
+    const [variantCount, setVariantCount] = useState(3)
+    const [generatingVariants, setGeneratingVariants] = useState(false)
+    const [variantResult, setVariantResult] = useState<'success' | 'error' | null>(null)
+    const variantRef = useRef<HTMLDivElement>(null)
 
+    // Close popover when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (variantRef.current && !variantRef.current.contains(event.target as Node)) {
+                setShowVariantPopover(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
 
+    const handleGenerateVariants = async () => {
+        setGeneratingVariants(true)
+        setVariantResult(null)
+        try {
+            const res = await fetch('/api/generate-variants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    questionId: question.id,
+                    count: variantCount
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setVariantResult('success')
+            onVariantsGenerated()
+            setTimeout(() => {
+                setShowVariantPopover(false)
+                setVariantResult(null)
+            }, 1500)
+        } catch (err) {
+            console.error('Variant generation error:', err)
+            setVariantResult('error')
+            setTimeout(() => setVariantResult(null), 3000)
+        } finally {
+            setGeneratingVariants(false)
+        }
+    }
 
     return (
         <div className={`p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-all duration-300 shadow-sm hover:shadow-md`}>
@@ -153,7 +197,7 @@ function QuestionRow({ question, index, onEdit, onDelete, language }: QuestionRo
                     )}
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2" ref={variantRef}>
                     <Button
                         variant="ghost"
                         size="icon"
@@ -163,6 +207,94 @@ function QuestionRow({ question, index, onEdit, onDelete, language }: QuestionRo
                     >
                         <Edit2 className="w-4 h-4" />
                     </Button>
+
+                    {/* Variant Generator Button */}
+                    <div className="relative">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowVariantPopover(!showVariantPopover)}
+                            className={`shrink-0 h-9 w-9 rounded-xl transition-all ${showVariantPopover || generatingVariants
+                                ? 'text-orange-500 bg-orange-500/10'
+                                : 'text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10'
+                                }`}
+                            title="Benzer Soru Üret"
+                            disabled={generatingVariants}
+                        >
+                            {generatingVariants ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Copy className="w-4 h-4" />
+                            )}
+                        </Button>
+
+                        {/* Variant Popover */}
+                        {showVariantPopover && (
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-bold text-white">Benzer Soru Üret</h4>
+                                    <button
+                                        onClick={() => setShowVariantPopover(false)}
+                                        className="text-zinc-500 hover:text-white transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
+                                    Bu soruya benzer, farklı sayılarla yeni sorular üretilir.
+                                </p>
+
+                                {variantResult === 'success' ? (
+                                    <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                                        <Check className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-emerald-400 text-sm font-semibold">Varyantlar oluşturuldu!</span>
+                                    </div>
+                                ) : variantResult === 'error' ? (
+                                    <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                                        <X className="w-4 h-4 text-red-500" />
+                                        <span className="text-red-400 text-sm font-semibold">Hata oluştu, tekrar deneyin.</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="mb-4">
+                                            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider block mb-2">Adet (max 5)</label>
+                                            <div className="flex gap-1.5">
+                                                {[1, 2, 3, 4, 5].map(n => (
+                                                    <button
+                                                        key={n}
+                                                        onClick={() => setVariantCount(n)}
+                                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${variantCount === n
+                                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <Button
+                                            onClick={handleGenerateVariants}
+                                            disabled={generatingVariants}
+                                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-10 text-sm shadow-lg shadow-orange-500/20 transition-all active:scale-95"
+                                        >
+                                            {generatingVariants ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Üretiliyor...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-4 h-4 mr-2" />
+                                                    {variantCount} Varyant Üret
+                                                </>
+                                            )}
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div >
@@ -173,10 +305,11 @@ interface QuestionTableProps {
     questions: Question[]
     onEdit: (question: Question) => void
     onDelete: () => void
+    onVariantsGenerated: () => void
     language: 'tr' | 'en'
 }
 
-export function QuestionTable({ questions, onEdit, onDelete, language }: QuestionTableProps) {
+export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated, language }: QuestionTableProps) {
     const [search, setSearch] = useState('')
 
     const filtered = questions.filter(q =>
@@ -219,6 +352,7 @@ export function QuestionTable({ questions, onEdit, onDelete, language }: Questio
                             index={index}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onVariantsGenerated={onVariantsGenerated}
                             language={language}
                         />
                     ))}

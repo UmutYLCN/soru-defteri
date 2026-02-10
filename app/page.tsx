@@ -244,76 +244,74 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] selection:bg-orange-500/30">
-      {/* Premium Glassmorphic Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/[0.06] bg-black/40 backdrop-blur-[20px] supports-[backdrop-filter]:bg-black/40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="group relative flex items-center justify-center">
-              {/* Logo Glow */}
-              <div className="absolute -inset-2 bg-orange-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-11 h-11 bg-zinc-950 border border-white/10 rounded-[14px] flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover:scale-105 active:scale-95">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="5" stroke="#f97316" strokeWidth="2.5" />
-                  <circle cx="12" cy="12" r="3.5" fill="white" />
-                  <circle cx="12" cy="12" r="1.5" fill="#f97316" />
+    <div className="min-h-screen bg-black selection:bg-orange-500/30 font-[family-name:var(--font-geist-sans)]">
+      {/* Background Effects - Brand Loyal */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-600/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-zinc-800/10 blur-[100px] rounded-full" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] brightness-100" />
+      </div>
+
+      {/* Premium Floating Header - Brand Colors */}
+      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-6xl">
+        <div className="bg-zinc-950/80 border border-white/5 backdrop-blur-xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 group cursor-pointer">
+              <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative shadow-[0_0_25px_rgba(249,115,22,0.15)] transition-all duration-300 group-hover:scale-105 group-hover:border-orange-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                  <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2.5" />
+                  <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </div>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-black text-white tracking-[-0.03em] font-[family-name:var(--font-outfit)] leading-none">
-                NoteDiur
-                <span className="text-orange-500 ml-0.5">.</span>
-              </h1>
-              <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase mt-1">Soru Defteri</span>
-            </div>
-          </div>
-          <div className="hidden md:flex items-center gap-4">
-            <div className="flex items-center gap-6 px-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Soru:</span>
-                <span className="text-sm text-white font-black">{questions.length}</span>
-              </div>
-              <div className="w-px h-3 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Ders:</span>
-                <span className="text-sm text-white font-black">{categories.length}</span>
-              </div>
+              <h1 className="text-2xl font-black text-white tracking-tighter">NoteDiur</h1>
             </div>
 
-            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-[14px] p-1 shadow-2xl">
+            <div className="hidden lg:flex items-center gap-6 border-l border-white/10 pl-8 ml-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Toplam Soru</span>
+                <span className="text-lg text-orange-500 font-black leading-none">{questions.length}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Ders Sayısı</span>
+                <span className="text-lg text-white font-black leading-none">{categories.length}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* TR/EN Toggle Premium */}
+            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
               <button
                 onClick={() => setLanguage('tr')}
-                className={`px-4 py-1.5 rounded-xl text-[12px] font-black transition-all duration-300 ${language === 'tr'
-                  ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'tr'
+                  ? 'bg-white text-black shadow-lg scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300'
                   }`}
               >
                 TR
               </button>
               <button
                 onClick={() => setLanguage('en')}
-                className={`px-4 py-1.5 rounded-xl text-[12px] font-black transition-all duration-300 ${language === 'en'
-                  ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'en'
+                  ? 'bg-white text-black shadow-lg scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300'
                   }`}
               >
                 EN
               </button>
             </div>
 
-            {/* User Profile Menu */}
+            {/* User Profile Capsule */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className={`w-11 h-11 rounded-[14px] border transition-all duration-300 flex items-center justify-center ${showUserMenu
-                  ? 'bg-orange-500/20 border-orange-500/50 text-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.2)]'
-                  : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white hover:bg-white/[0.08]'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 ${showUserMenu
+                  ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                  : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
               >
-                <User size={20} />
+                <User size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Admin</span>
               </button>
 
               {showUserMenu && (
@@ -354,7 +352,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-32 relative">
+      <main className="container mx-auto px-6 py-40 relative z-10">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
           {/* Left Action Group */}
           <div className="flex items-center gap-3">
@@ -414,6 +412,7 @@ export default function Home() {
           questions={filteredQuestions}
           onEdit={handleEdit}
           onDelete={fetchData}
+          onVariantsGenerated={fetchData}
           language={language}
         />
       </main>
