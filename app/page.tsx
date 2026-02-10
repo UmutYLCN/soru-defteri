@@ -244,105 +244,117 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-[#050505] selection:bg-orange-500/30">
+      {/* Premium Glassmorphic Header */}
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/[0.06] bg-black/40 backdrop-blur-[20px] supports-[backdrop-filter]:bg-black/40">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center group relative shadow-[0_0_20px_rgba(249,115,22,0.1)]">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                  <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2" />
-                  <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <div className="flex items-center gap-4">
+            <div className="group relative flex items-center justify-center">
+              {/* Logo Glow */}
+              <div className="absolute -inset-2 bg-orange-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative w-11 h-11 bg-zinc-950 border border-white/10 rounded-[14px] flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover:scale-105 active:scale-95">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="18" height="18" rx="5" stroke="#f97316" strokeWidth="2.5" />
+                  <circle cx="12" cy="12" r="3.5" fill="white" />
+                  <circle cx="12" cy="12" r="1.5" fill="#f97316" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">NoteDiur</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full flex items-center gap-2 shadow-inner">
-                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Soru</span>
-                <span className="text-sm text-orange-500 font-bold">{questions.length}</span>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black text-white tracking-[-0.03em] font-[family-name:var(--font-outfit)] leading-none">
+                NoteDiur
+                <span className="text-orange-500 ml-0.5">.</span>
+              </h1>
+              <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase mt-1">Soru Defteri</span>
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-6 px-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Soru:</span>
+                <span className="text-sm text-white font-black">{questions.length}</span>
               </div>
-              <div className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full flex items-center gap-2 shadow-inner">
-                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Kategori</span>
-                <span className="text-sm text-white font-bold">{categories.length}</span>
+              <div className="w-px h-3 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Ders:</span>
+                <span className="text-sm text-white font-black">{categories.length}</span>
               </div>
+            </div>
 
-              {/* TR/EN Toggle */}
-              <div className="flex items-center bg-zinc-800 rounded-lg p-1 ml-2">
-                <button
-                  onClick={() => setLanguage('tr')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${language === 'tr'
-                    ? 'bg-orange-500 text-white shadow-lg'
-                    : 'text-zinc-500 hover:text-white'
-                    }`}
-                >
-                  TR
-                </button>
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${language === 'en'
-                    ? 'bg-orange-500 text-white shadow-lg'
-                    : 'text-zinc-500 hover:text-white'
-                    }`}
-                >
-                  EN
-                </button>
-              </div>
+            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-[14px] p-1 shadow-2xl">
+              <button
+                onClick={() => setLanguage('tr')}
+                className={`px-4 py-1.5 rounded-xl text-[12px] font-black transition-all duration-300 ${language === 'tr'
+                  ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  }`}
+              >
+                TR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-4 py-1.5 rounded-xl text-[12px] font-black transition-all duration-300 ${language === 'en'
+                  ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  }`}
+              >
+                EN
+              </button>
+            </div>
 
-              {/* User Profile Menu */}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${showUserMenu
-                    ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.2)]'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
-                    }`}
-                >
-                  <User size={20} />
-                </button>
+            {/* User Profile Menu */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className={`w-11 h-11 rounded-[14px] border transition-all duration-300 flex items-center justify-center ${showUserMenu
+                  ? 'bg-orange-500/20 border-orange-500/50 text-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.2)]'
+                  : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white hover:bg-white/[0.08]'
+                  }`}
+              >
+                <User size={20} />
+              </button>
 
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
-                    <div className="px-4 py-2 border-b border-zinc-800 mb-2">
-                      <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">Yönetici Paneli</p>
-                      <p className="text-sm font-bold text-white">Admin User</p>
-                    </div>
-
-                    <button
-                      onClick={handleSeedDatabase}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-orange-500/10 hover:text-orange-500 transition-colors text-sm font-semibold"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
-                        <FolderTree size={16} />
-                      </div>
-                      <span>{language === 'tr' ? 'Hazır Dersleri Yükle' : 'Load Ready Courses'}</span>
-                    </button>
-
-                    <button
-                      onClick={handleResetDatabase}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                        <Trash2 size={16} />
-                      </div>
-                      <span>{language === 'tr' ? 'Veritabanını Sıfırla' : 'Delete Database'}</span>
-                    </button>
-
-                    <div className="mt-2 pt-2 border-t border-zinc-800 px-2">
-                      <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">NoteDiur v1.0</p>
-                    </div>
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-4 py-2 border-b border-zinc-800 mb-2">
+                    <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">Yönetici Paneli</p>
+                    <p className="text-sm font-bold text-white">Admin User</p>
                   </div>
-                )}
-              </div>
+
+                  <button
+                    onClick={handleSeedDatabase}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-orange-500/10 hover:text-orange-500 transition-colors text-sm font-semibold"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                      <FolderTree size={16} />
+                    </div>
+                    <span>{language === 'tr' ? 'Hazır Dersleri Yükle' : 'Load Ready Courses'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleResetDatabase}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                      <Trash2 size={16} />
+                    </div>
+                    <span>{language === 'tr' ? 'Veritabanını Sıfırla' : 'Delete Database'}</span>
+                  </button>
+
+                  <div className="mt-2 pt-2 border-t border-zinc-800 px-2">
+                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">NoteDiur v1.0</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-32 relative">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
           {/* Left Action Group */}
           <div className="flex items-center gap-3">
@@ -406,15 +418,14 @@ export default function Home() {
         />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-800 py-6 mt-12">
-        <div className="container mx-auto px-6 text-center text-zinc-500 text-sm">
-          NoteDiur © 2024 - Premium Question Management
+      <footer className="border-t border-white/5 py-12 mt-20 relative z-10">
+        <div className="container mx-auto px-6 text-center text-zinc-600 text-[11px] font-bold uppercase tracking-[0.4em] font-[family-name:var(--font-outfit)]">
+          NoteDiur Premium v1.0 • Built for Excellence
         </div>
       </footer>
 
       {/* Export Options Wizard */}
-      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${showExportDialog ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+      <div className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-300 ${showExportDialog ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => exportWizardStep !== 'generating' && setShowExportDialog(false)} />
         <div className="relative bg-zinc-900 border border-zinc-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
 
@@ -525,10 +536,10 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
+      </div >
 
       {/* Edit Question Dialog */}
-      <EditQuestionDialog
+      < EditQuestionDialog
         question={editingQuestion}
         categories={categories}
         open={editDialogOpen}

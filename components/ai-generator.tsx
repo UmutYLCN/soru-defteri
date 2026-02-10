@@ -91,7 +91,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
             <DialogTrigger asChild>
                 <Button className="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-orange-500/50 font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-black/20 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95">
                     <Wand2 className="w-5 h-5 text-orange-500" />
-                    <span>AI Üret</span>
+                    <span>AI Soru Üret</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white p-0 custom-scrollbar">
