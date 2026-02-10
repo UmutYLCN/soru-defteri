@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { generateQuestions } from '@/lib/gemini'
+import { generate } from '@/lib/gemini'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
         }
 
-        const generatedQuestions = await generateQuestions(prompt, count, questionType || 'Karışık', image, originalImage)
+        const generatedQuestions = await generate(prompt, image, questionType || 'Karışık', count, originalImage)
 
         // Save to database
         const savedQuestions = await Promise.all(
