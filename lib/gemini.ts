@@ -61,14 +61,14 @@ export async function generateQuestions(prompt: string, count: number, questionT
     - At least one question should require multi-step reasoning.`
   };
 
-  const systemPrompt = `You are a world-class exam question writer for Turkish university entrance exams (TYT/AYT level). Generate ${count} multiple-choice questions based on: "${prompt}".
+  const systemPrompt = `You are a world-class exam question writer for Turkish university-level courses (midterm/final exam standard). Generate ${count} multiple-choice questions based on: "${prompt}".
 
 ${typeInstructions[questionType] || typeInstructions['Karışık']}
 
 EXAM-LEVEL DIFFICULTY:
-- Questions should be at competitive exam standard (TYT/AYT difficulty).
-- Include tricky but fair questions that distinguish strong students.
-- Avoid trivially easy or impossibly hard questions.
+- Questions should be at university midterm/final exam standard.
+- Include challenging but fair questions that test deep understanding, not just memorization.
+- Suitable for undergraduate university students studying the subject.
 
 DISTRACTOR (WRONG OPTION) ENGINEERING:
 - CRITICAL: Wrong options must NOT be random numbers. Each wrong option should result from a COMMON STUDENT MISTAKE:

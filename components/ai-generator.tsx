@@ -135,13 +135,13 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                         key={type.value}
                                         onClick={() => setQuestionType(type.value)}
                                         className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left ${questionType === type.value
-                                                ? 'border-orange-500/50 bg-orange-500/10 shadow-lg shadow-orange-500/5'
-                                                : 'border-zinc-800 bg-zinc-800/30 hover:border-zinc-700 hover:bg-zinc-800/60'
+                                            ? 'border-orange-500/50 bg-orange-500/10 shadow-lg shadow-orange-500/5'
+                                            : 'border-zinc-800 bg-zinc-800/30 hover:border-zinc-700 hover:bg-zinc-800/60'
                                             }`}
                                     >
                                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${questionType === type.value
-                                                ? 'bg-orange-500/20 text-orange-500'
-                                                : 'bg-zinc-800 text-zinc-500'
+                                            ? 'bg-orange-500/20 text-orange-500'
+                                            : 'bg-zinc-800 text-zinc-500'
                                             }`}>
                                             <Icon className="w-4 h-4" />
                                         </div>
@@ -204,7 +204,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                     <div className="flex items-start gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
                         <span className="text-lg">🎯</span>
                         <div className="text-[12px] text-zinc-500 leading-relaxed">
-                            <strong className="text-zinc-400">TYT/AYT seviyesinde</strong> sorular üretilir. Yanlış şıklar, öğrencilerin sık yaptığı hatalardan türetilir. Her soru <strong className="text-zinc-400">Türkçe + İngilizce</strong> olarak otomatik oluşturulur.
+                            <strong className="text-zinc-400">Üniversite vize/final seviyesinde</strong> sorular üretilir. Yanlış şıklar, öğrencilerin sık yaptığı hatalardan türetilir. Her soru <strong className="text-zinc-400">Türkçe + İngilizce</strong> olarak otomatik oluşturulur.
                         </div>
                     </div>
 
