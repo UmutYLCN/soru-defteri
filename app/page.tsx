@@ -39,11 +39,13 @@ interface Question {
   optionCEN: string | null
   optionDEN: string | null
   solutionEN: string | null
+  imageUrl: string | null
   groupId: number | null
   group: {
     id: number
     stemText: string
     stemTextEN: string | null
+    imageUrl: string | null
   } | null
   category: {
     id: number
@@ -613,6 +615,16 @@ export default function Home() {
                     <div style={{ fontSize: '15.5px', lineHeight: '1.6', color: '#111827', fontWeight: '500' }}>
                       <QuestionTextDisplay text={q.questionText} />
                     </div>
+                    {/* Diagram in PDF */}
+                    {(q.group?.imageUrl || q.imageUrl) && (
+                      <div style={{ marginTop: '15px', marginBottom: '15px', textAlign: 'center' }}>
+                        <img
+                          src={q.group?.imageUrl || q.imageUrl || ''}
+                          alt="Diagram"
+                          style={{ maxWidth: '100%', maxHeight: '60mm', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

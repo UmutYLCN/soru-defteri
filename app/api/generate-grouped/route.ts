@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // Allow longer processing for vision
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -6,27 +7,25 @@ import { generateGroupedQuestions } from '@/lib/gemini'
 
 export async function POST(request: Request) {
     try {
-        const { prompt, subQuestionCount, categoryId } = await request.json()
+        console.log('API Request: /api/generate-grouped');
+        const { prompt, subQuestionCount, categoryId, image, originalImage } = await request.json()
 
-        if (!prompt) {
-            return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+        if (!prompt && !image) {
+            return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
         }
 
         if (!subQuestionCount || subQuestionCount < 2 || subQuestionCount > 5) {
             return NextResponse.json({ error: 'Sub-question count must be between 2 and 5' }, { status: 400 })
         }
 
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            return NextResponse.json({ error: 'Gemini API key is not configured' }, { status: 500 })
-        }
-
-        const result = await generateGroupedQuestions(prompt, subQuestionCount)
+        const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage)
 
         // Create the QuestionGroup first
         const group = await prisma.questionGroup.create({
             data: {
                 stemText: result.stemText,
                 stemTextEN: result.stemTextEN || null,
+                imageUrl: result.imageUrl || null,
                 categoryId: categoryId ? parseInt(categoryId) : null,
             }
         })

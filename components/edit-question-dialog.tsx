@@ -39,6 +39,10 @@ interface Question {
         name: string
     } | null
     solution: string | null
+    imageUrl: string | null
+    group?: {
+        imageUrl: string | null
+    } | null
 }
 
 interface EditQuestionDialogProps {
@@ -60,7 +64,8 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
         optionC: '',
         optionD: '',
         correctAnswer: '',
-        solution: ''
+        solution: '',
+        imageUrl: ''
     })
 
     useEffect(() => {
@@ -73,7 +78,8 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                 optionC: question.optionC,
                 optionD: question.optionD,
                 correctAnswer: question.correctAnswer,
-                solution: question.solution || ''
+                solution: question.solution || '',
+                imageUrl: question.group?.imageUrl || question.imageUrl || ''
             })
         }
     }, [question])
@@ -253,6 +259,19 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                                 <div className="mt-2 pt-2 border-t border-zinc-800">
                                     <Label className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Çözüm Önizleme</Label>
                                     <MathText text={formData.solution} className="text-zinc-300 text-sm block mt-1" />
+                                </div>
+                            )}
+
+                            {formData.imageUrl && (
+                                <div className="mt-2 pt-2 border-t border-zinc-800">
+                                    <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-2">Soru Diyagramı</Label>
+                                    <div className="rounded-lg overflow-hidden border border-zinc-800 bg-black/40 p-2">
+                                        <img
+                                            src={formData.imageUrl}
+                                            alt="Diagram"
+                                            className="max-w-full h-auto mx-auto rounded-md"
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>

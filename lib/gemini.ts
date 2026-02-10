@@ -1,151 +1,213 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
-const geminiModel = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-  generationConfig: {
-    responseMimeType: "application/json",
-  }
-});
+import sharp from "sharp";
 
 // Initialize OpenAI
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "",
+});
 
 /**
- * Verifies and fixes a question using either GPT-4o-mini (preferred) or Gemini.
- * Strictly prevents inner monologues about corrections in the solution text.
+ * Extracts a diagram/graphic from a base64 image using OpenAI GPT-4o-mini vision.
+ */
+async function extractDiagramFromImage(image: string): Promise<string | null> {
+  try {
+    const base64Data = image.split(',')[1];
+    const mimeType = image.split(',')[0].split(':')[1].split(';')[0];
+
+    const detectionPrompt = `Analyze this physics/engineering problem image. 
+    Find the primary diagram, circuit schematic, graph, or illustration.
+    Return ONLY a JSON object with the bounding box coordinates [ymin, xmin, ymax, xmax] normalized from 0 to 1000.
+    
+    Format: {"boundingBox": [ymin, xmin, ymax, xmax]}
+    If no diagram is present, return {"boundingBox": [0, 0, 1000, 1000]}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: detectionPrompt },
+            { type: "image_url", image_url: { url: image } }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const text = response.choices[0].message.content || "{}";
+    console.log("OpenAI Vision detection response:", text);
+
+    const parsed = JSON.parse(text);
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    const img = sharp(buffer);
+    const metadata = await img.metadata();
+
+    if (!metadata.width || !metadata.height) return image;
+
+    if (parsed.boundingBox && Array.isArray(parsed.boundingBox) && parsed.boundingBox.length === 4) {
+      let [ymin, xmin, ymax, xmax] = parsed.boundingBox;
+
+      // Full image check
+      if (ymin === 0 && xmin === 0 && ymax === 1000 && xmax === 1000) {
+        if (metadata.width > 1200) {
+          const resized = await img.resize(1200).toBuffer();
+          return `data:${mimeType};base64,${resized.toString('base64')}`;
+        }
+        return image;
+      }
+
+      // Crop with padding
+      const padding = 30;
+      const left = Math.max(0, Math.round((xmin / 1000) * metadata.width) - padding);
+      const top = Math.max(0, Math.round((ymin / 1000) * metadata.height) - padding);
+      let width = Math.round(((xmax - xmin) / 1000) * metadata.width) + (padding * 2);
+      let height = Math.round(((ymax - ymin) / 1000) * metadata.height) + (padding * 2);
+
+      if (left + width > metadata.width) width = metadata.width - left;
+      if (top + height > metadata.height) height = metadata.height - top;
+
+      const croppedBuffer = await img
+        .extract({ left, top, width, height })
+        .resize(1000, null, { withoutEnlargement: true })
+        .toBuffer();
+
+      console.log("Successfully extracted diagram via OpenAI + Sharp.");
+      return `data:${mimeType};base64,${croppedBuffer.toString('base64')}`;
+    }
+
+    return image;
+  } catch (error) {
+    console.error("OpenAI Extraction Error:", error);
+    return image;
+  }
+}
+
+/**
+ * Verifies and fixes a question using GPT-4o-mini.
  */
 export async function verifyAndFixQuestion(q: any): Promise<any> {
-  const verifyPrompt = `You are a strict academic auditor. Review the following multiple-choice question for logical consistency and mathematical accuracy.
-
+  try {
+    const verifyPrompt = `You are a strict academic auditor. Review the following multiple-choice question for logical consistency and mathematical accuracy.
     QUESTION DATA:
     ${JSON.stringify(q, null, 2)}
-
     YOUR TASKS:
     1. Re-calculate everything from scratch based on the question text.
-    2. Check if the "correctAnswer" actually corresponds to the correct mathematical result.
-    3. REMOVE ALL "INNER MONOLOGUE": No "I noticed a mistake", "Updated to match options", "Oops", or "Correction".
-    4. The "solution" must ONLY contain step-by-step instructions.
-    5. If there is a mistake, FIX IT SILENTLY in the options and solution.
-    6. Ensure the final result is clean, professional, and mathematically perfect.
-    7. Return NO apologies, NO metadata, NO comments.
+    2. Check if the "correctAnswer" actually corresponds to the result.
+    3. REMOVE ALL "INNER MONOLOGUE".
+    4. Provide Step-by-step professional solution using STEP_START/STEP_END.
+    5. Ensure ALL mathematical expressions and symbols are wrapped in LaTeX delimiters:
+       - Use single dollar signs $...$ for inline math (e.g., $E=mc^2$).
+       - Use double dollar signs $$...$$ for block/formula math.
+    Return corrected question data in same JSON format.`;
 
-    Return the corrected question data in the EXACT same JSON format as the input. Return ONLY the JSON object.`;
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: verifyPrompt }],
+      response_format: { type: "json_object" }
+    });
 
-  try {
-    if (openai) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: verifyPrompt }],
-        response_format: { type: "json_object" }
-      });
-      const content = response.choices[0].message.content;
-      return JSON.parse(content || "{}");
-    } else {
-      const result = await geminiModel.generateContent(verifyPrompt);
-      const response = await result.response;
-      const text = response.text();
-      const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-      return JSON.parse(cleanedText);
-    }
+    const aiResult = JSON.parse(response.choices[0].message.content || "{}");
+
+    const fixMath = (text: string | null) => {
+      if (!text) return text;
+      // If it contains common LaTeX markers but no delimiters, wrap it
+      if (!text.includes('$') && !text.includes('\\(') && !text.includes('\\[')) {
+        if (/\\frac|\\sqrt|\\sum|\\pi|\\epsilon|\\alpha|\\beta|\\gamma|\\delta|\\omega|\\phi|\\psi|\\theta|\\tau|\\vec|\\hat|\\bar|[_^]/.test(text)) {
+          return `$${text}$`;
+        }
+      }
+      return text;
+    };
+
+    // Merge AI result with defaults, ensuring required fields are never undefined
+    return {
+      questionText: fixMath(aiResult.questionText || q.questionText || "Soru metni eksik."),
+      optionA: fixMath(aiResult.optionA || q.optionA || "A) Seçenek eksik"),
+      optionB: fixMath(aiResult.optionB || q.optionB || "B) Seçenek eksik"),
+      optionC: fixMath(aiResult.optionC || q.optionC || "C) Seçenek eksik"),
+      optionD: fixMath(aiResult.optionD || q.optionD || "D) Seçenek eksik"),
+      correctAnswer: aiResult.correctAnswer || q.correctAnswer || "A",
+      solution: fixMath(aiResult.solution || q.solution || null),
+      questionTextEN: fixMath(aiResult.questionTextEN || q.questionTextEN || null),
+      optionAEN: fixMath(aiResult.optionAEN || q.optionAEN || null),
+      optionBEN: fixMath(aiResult.optionBEN || q.optionBEN || null),
+      optionCEN: fixMath(aiResult.optionCEN || q.optionCEN || null),
+      optionDEN: fixMath(aiResult.optionDEN || q.optionDEN || null),
+      solutionEN: fixMath(aiResult.solutionEN || q.solutionEN || null)
+    };
   } catch (error) {
     console.error("Verification Error:", error);
     return q;
   }
 }
 
-export async function generateQuestions(prompt: string, count: number, questionType: string) {
-  const typeInstructions: Record<string, string> = {
-    'Hesaplama': `QUESTION TYPE: Calculation-based problems.
-    - Questions MUST require numerical computation, formula application, or multi-step mathematical reasoning.
-    - Include realistic physical scenarios with specific numerical values.
-    - Ensure answers are clean numbers (avoid overly complex decimals).`,
-    'Kavramsal': `QUESTION TYPE: Conceptual understanding questions.
-    - Questions should test DEEP understanding of principles, not just memorization.
-    - Include "why" and "what happens if" scenarios.
-    - Use real-world analogies and thought experiments.
-    - At least 2 questions should require comparing/contrasting concepts.`,
-    'Grafik/Tablo': `QUESTION TYPE: Graph and Table interpretation questions.
-    - Questions should describe a graph, chart, or data table in text form.
-    - Ask students to interpret trends, calculate slopes, identify relationships, or predict outcomes.
-    - Include specific data points they must analyze.
-    - Use formats like "Aşağıdaki tabloya göre..." or "Grafiğe göre...".`,
-    'Karışık': `QUESTION TYPE: Mixed variety.
-    - Include a balanced mix of calculation, conceptual, and data interpretation questions.
-    - Ensure variety in question structure and cognitive demands.
-    - At least one question should require multi-step reasoning.`
-  };
+export async function generate(
+  prompt: string,
+  image?: string,
+  questionType: string = "Karışık",
+  count: number = 5,
+  originalImage?: string // New: original context
+) {
+  const basePrompt = `Create ${count} ${questionType} multiple choice questions in Turkish and English.`;
+  const systemPrompt = `You are a world-class exam question writer. ${basePrompt}
+  Format: JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
+  CRITICAL: Use LaTeX for ALL math. 
+  - Wrap inline math/variables in single dollar signs like $x$.
+  - Wrap complex formulas in double dollar signs like $$\\frac{a}{b}$$. 
+  Use STEP_START/STEP_END format for solutions.`;
 
-  const systemPrompt = `You are a world-class exam question writer for Turkish university-level courses (midterm/final exam standard). Generate ${count} multiple-choice questions based on: "${prompt}".
-
-${typeInstructions[questionType] || typeInstructions['Karışık']}
-
-EXAM-LEVEL DIFFICULTY:
-- Questions should be at university midterm/final exam standard.
-- Include challenging but fair questions that test deep understanding, not just memorization.
-- Suitable for undergraduate university students studying the subject.
-
-DISTRACTOR (WRONG OPTION) ENGINEERING:
-- CRITICAL: Wrong options must NOT be random numbers. Each wrong option should result from a COMMON STUDENT MISTAKE:
-  • Forgetting a sign (e.g., using + instead of −)
-  • Using wrong formula (e.g., using v=d/t instead of v²=v₀²+2as)
-  • Forgetting unit conversion (e.g., cm vs m)
-  • Off-by-one errors or partial calculations
-  • Conceptual misconceptions
-- This makes the question pedagogically valuable.
-
-DIVERSITY & VARIETY:
-1. Each question must be UNIQUE - no repeated logic.
-2. Use DIFFERENT numerical values for each question.
-3. No more than 2 questions should use similar setups.
-4. Vary contexts and scenarios broadly.
-5. The correct answer letter MUST vary (don't always use the same letter).
-
-FORMAT REQUIREMENTS:
-1. Return a valid JSON array.
-2. Each object fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN
-3. ALWAYS provide BOTH Turkish AND English versions.
-4. Exactly 4 options (A, B, C, D), only ONE correct.
-5. NO INNER MONOLOGUE: Do not include phrases like "I simplified the values" or "Correct answer updated".
-
-SOLUTION FORMAT:
-- Must be CONCISE, STEP-BY-STEP.
-- Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Explanation & Calculation]
-- Use $...$ for ALL math with double backslashes for LaTeX.
-- NO apologies, NO unnecessary commentary. Just clean, professional solutions.
-- Example: "STEP_START Adım 1: Formül STEP_END $F=m \\\\\\\\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\\\\\\\cdot 5 = 10$ N."
-
-Return ONLY the JSON array. No extra text.`;
-
-  let text = "";
   try {
-    if (openai) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: systemPrompt }],
-        response_format: { type: "json_object" }
+    const userContent: any[] = [
+      { type: "text", text: `Topic/Prompt: ${prompt || "Generate questions based on the context."}` }
+    ];
+
+    if (originalImage) {
+      userContent.push({
+        type: "text",
+        text: "CONTEXT IMAGE (Original): This image contains the full problem description and text context. Use this TO UNDERSTAND the problem."
       });
-      text = response.choices[0].message.content || "[]";
-      if (text.startsWith("{") && !text.includes("[")) {
-        // Extract array if GPT wraps it in an object
-        const parsed = JSON.parse(text);
-        text = JSON.stringify(Object.values(parsed)[0]);
-      }
-    } else {
-      const result = await geminiModel.generateContent(systemPrompt);
-      text = result.response.text();
+      userContent.push({
+        type: "image_url",
+        image_url: { url: originalImage }
+      });
     }
 
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    const questions = JSON.parse(cleanedText);
-    const arrayQuestions = Array.isArray(questions) ? questions : (questions.questions || []);
+    if (image) {
+      userContent.push({
+        type: "text",
+        text: originalImage
+          ? "DIAGRAM IMAGE (Selected): This is the specific diagram to refer to in the questions."
+          : "IMAGE: Analyze the text and diagram in this image."
+      });
+      userContent.push({
+        type: "image_url",
+        image_url: { url: image }
+      });
+    }
+
+    const [genResponse, extractedDiagram] = await Promise.all([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent }
+        ],
+        response_format: { type: "json_object" },
+      }),
+      image ? extractDiagramFromImage(image) : Promise.resolve(null)
+    ]);
+
+    let text = genResponse.choices[0].message.content || "[]";
+    let parsed = JSON.parse(text);
+    const questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
 
     const verifiedQuestions = await Promise.all(
-      arrayQuestions.map((q: any) => verifyAndFixQuestion(q))
+      questions.map(async (q: any) => {
+        const fixed = await verifyAndFixQuestion(q);
+        return { ...fixed, imageUrl: extractedDiagram };
+      })
     );
 
     return verifiedQuestions;
@@ -155,58 +217,112 @@ Return ONLY the JSON array. No extra text.`;
   }
 }
 
-export async function generateGroupedQuestions(prompt: string, subQuestionCount: number) {
-  const systemPrompt = `You are a world-class exam question writer for Turkish university-level courses (midterm/final exam standard).
+export async function generateGroupedQuestions(
+  prompt: string,
+  image?: string,
+  subQuestionCount: number = 3,
+  originalImage?: string // New: original context
+) {
+  const basePrompt = `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem).`;
+  const systemPrompt = `You are a world-class exam question writer.
+  ${basePrompt}
+  
+  Format Requirement: Return a JSON object with:
+  {
+    "stemText": "Turkish stem text",
+    "stemTextEN": "English stem text",
+    "questions": [
+      {
+        "questionText": "...",
+        "optionA": "...",
+        "optionB": "...",
+        "optionC": "...",
+        "optionD": "...",
+        "correctAnswer": "A",
+        "solution": "...",
+        "questionTextEN": "...",
+        "optionAEN": "...",
+        "optionBEN": "...",
+        "optionCEN": "...",
+        "optionDEN": "...",
+        "solutionEN": "..."
+      }
+    ]
+  }
 
-YOUR TASK: Create an INTEGRATED/GROUPED question set based on: "${prompt}"
-
-This is the "Soru X-Y" format used in Turkish university exams where:
-- There is ONE shared scenario/context (stem text) that describes a physical setup, circuit, diagram, or situation.
-- Multiple sub-questions (${subQuestionCount}) are derived from that SAME scenario.
-- Sub-questions may build on each other.
-
-REQUIREMENTS:
-1. Create a rich, detailed stem/scenario text (stemText and stemTextEN).
-2. Create ${subQuestionCount} sub-questions (questions array).
-3. Each sub-question has 4 options and ONE correct answer.
-4. NO INNER MONOLOGUE in solution or text.
-
-Return a JSON object:
-{
-  "stemText": "...",
-  "stemTextEN": "...",
-  "questions": [
-    {
-      "questionText": "...", "optionA": "...", ..., "correctAnswer": "A", "solution": "...",
-      "questionTextEN": "...", ...
-    }
-  ]
-}`;
+  CRITICAL: Use LaTeX for ALL math/formulas. 
+  - Inline: Wrap in single $ (e.g., $R_1$).
+  - Block: Wrap in double $$ (e.g., $$\\sum X$$).`;
 
   try {
-    let text = "";
-    if (openai) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: systemPrompt }],
-        response_format: { type: "json_object" }
+    const userContent: any[] = [
+      { type: "text", text: `Topic/Prompt: ${prompt || "Generate grouped questions based on the context."}` }
+    ];
+
+    if (originalImage) {
+      userContent.push({
+        type: "text",
+        text: "CONTEXT IMAGE (Original): This image contains the full problem description and context. Use this TO UNDERSTAND the scenario."
       });
-      text = response.choices[0].message.content || "";
-    } else {
-      const result = await geminiModel.generateContent(systemPrompt);
-      text = result.response.text();
+      userContent.push({
+        type: "image_url",
+        image_url: { url: originalImage }
+      });
     }
 
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleanedText);
+    if (image) {
+      userContent.push({
+        type: "text",
+        text: originalImage
+          ? "DIAGRAM IMAGE (Selected): This is the specific diagram to refer to."
+          : "IMAGE: Use this image for context and diagrams."
+      });
+      userContent.push({
+        type: "image_url",
+        image_url: { url: image }
+      });
+    }
+
+    const [genResponse, extractedDiagram] = await Promise.all([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        response_format: { type: "json_object" },
+      }),
+      image ? extractDiagramFromImage(image) : Promise.resolve(null),
+    ]);
+
+    const parsed = JSON.parse(genResponse.choices[0].message.content || "{}");
 
     const verifiedQuestions = await Promise.all(
-      parsed.questions.map((q: any) => verifyAndFixQuestion(q))
+      (parsed.questions || []).map(async (q: any) => {
+        const fixed = await verifyAndFixQuestion(q);
+        // Robust normalization to prevent Prisma errors
+        return {
+          questionText: fixed.questionText || q.questionText || "Soru metni bulunamadı.",
+          optionA: fixed.optionA || q.optionA || "A) Seçenek eksik",
+          optionB: fixed.optionB || q.optionB || "B) Seçenek eksik",
+          optionC: fixed.optionC || q.optionC || "C) Seçenek eksik",
+          optionD: fixed.optionD || q.optionD || "D) Seçenek eksik",
+          correctAnswer: fixed.correctAnswer || q.correctAnswer || "A",
+          solution: fixed.solution || q.solution || null,
+          questionTextEN: fixed.questionTextEN || q.questionTextEN || null,
+          optionAEN: fixed.optionAEN || q.optionAEN || null,
+          optionBEN: fixed.optionBEN || q.optionBEN || null,
+          optionCEN: fixed.optionCEN || q.optionCEN || null,
+          optionDEN: fixed.optionDEN || q.optionDEN || null,
+          solutionEN: fixed.solutionEN || q.solutionEN || null,
+        };
+      })
     );
 
     return {
-      stemText: parsed.stemText,
-      stemTextEN: parsed.stemTextEN,
+      stemText: parsed.stemText || "Senaryo metni bulunamadı.",
+      stemTextEN: parsed.stemTextEN || null,
+      imageUrl: extractedDiagram,
       questions: verifiedQuestions
     };
   } catch (e) {
@@ -215,47 +331,72 @@ Return a JSON object:
   }
 }
 
-// Types for NotebookLM import
-interface NotebookQuestion {
-  question: string;
-  answerOptions: {
-    text: string;
-    isCorrect: boolean;
-  }[];
-}
-
-export async function processNotebookQuestion(q: NotebookQuestion) {
-  const prompt = `Convert the following question and answer options into a professional university-level multiple-choice question format.
-  
+export async function processNotebookQuestion(q: any) {
+  const prompt = `Convert to professional university-level question: 
   QUESTION: ${q.question}
-  OPTIONS: ${q.answerOptions.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt.text} ${opt.isCorrect ? '(CORRECT)' : ''}`).join('\n')}
-  
-  TASK:
-  1. Refine the question text to be more formal and academic.
-  2. Create a step-by-step professional solution.
-  3. Ensure BOTH Turkish AND English versions are provided.
-  4. Format the solution using: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Açıklama]
-  5. Use LaTeX for math.
-  
-  Return ONLY a JSON object with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN`;
+  Return JSON fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN`;
 
   try {
-    let text = "";
-    if (openai) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-      });
-      text = response.choices[0].message.content || "";
-    } else {
-      const result = await geminiModel.generateContent(prompt);
-      text = result.response.text();
-    }
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleanedText);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    });
+    return JSON.parse(response.choices[0].message.content || "{}");
   } catch (error) {
-    console.error("Error processing notebook question:", error);
+    console.error("Notebook processing error:", error);
     return null;
+  }
+}
+
+/**
+ * Detects if an image contains a diagram, circuit, or graph.
+ */
+export async function detectDiagram(image: string): Promise<boolean> {
+  try {
+    const prompt = `Analyze this image. Does it contain a diagram, circuit schematic, graph, or any technical illustration? 
+    Return ONLY a JSON object: {"hasDiagram": true} or {"hasDiagram": false}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: image } }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(response.choices[0].message.content || "{}");
+    return !!parsed.hasDiagram;
+  } catch (error) {
+    console.error("Detection Error:", error);
+    return false;
+  }
+}
+
+export async function generateVariants(originalQuestion: any, count: number) {
+  const systemPrompt = `Generate ${count} variations of this question:
+  ${JSON.stringify(originalQuestion)}
+  Return JSON array of question objects.`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: systemPrompt }],
+      response_format: { type: "json_object" }
+    });
+
+    let parsed = JSON.parse(response.choices[0].message.content || "[]");
+    const variants = Array.isArray(parsed) ? parsed : (parsed.questions || []);
+
+    return await Promise.all(variants.map((v: any) => verifyAndFixQuestion(v)));
+  } catch (e) {
+    console.error("Variant Generation Error:", e);
+    throw e;
   }
 }

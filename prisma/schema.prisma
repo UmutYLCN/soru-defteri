@@ -7,6 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  name             String?
+  image            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  
+  // Üyelik ve Kredi Sistemi
+  subscriptionPlan SubscriptionPlan @default(FREE)
+  credits          Int              @default(5)      // Mevcut kredi bakiyesi
+  
+  // İlişkiler
+  questions        Question[]
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER   // $4.99 - 500 Soru
+  PRO       // $9.99 - 2000 Soru
+  ELITE     // $19.99 - 10000 Soru
+}
+
 model Category {
   id             Int              @id @default(autoincrement())
   name           String           @unique
@@ -23,6 +46,7 @@ model QuestionGroup {
   stemText     String
   stemTextEN   String?
   categoryId   Int?
+  imageUrl     String?   
   createdAt    DateTime  @default(now())
   category     Category? @relation(fields: [categoryId], references: [id])
   questions    Question[]
@@ -32,6 +56,7 @@ model Question {
   id             Int            @id @default(autoincrement())
   categoryId     Int?
   groupId        Int?
+  userId         String?        // Soruyu oluşturan kullanıcı
   questionText   String
   optionA        String
   optionB        String
@@ -39,6 +64,7 @@ model Question {
   optionD        String
   correctAnswer  String
   solution       String?
+  imageUrl       String?        
   questionTextEN String?
   optionAEN      String?
   optionBEN      String?
@@ -46,6 +72,8 @@ model Question {
   optionDEN      String?
   solutionEN     String?
   createdAt      DateTime       @default(now())
+  
   category       Category?      @relation(fields: [categoryId], references: [id])
   group          QuestionGroup? @relation(fields: [groupId], references: [id])
+  user           User?          @relation(fields: [userId], references: [id])
 }

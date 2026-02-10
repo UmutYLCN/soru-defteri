@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server'
 import { generateQuestions } from '@/lib/gemini'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
 export async function POST(req: Request) {
     try {
-        const { prompt, count, questionType, categoryId } = await req.json()
+        console.log('API Request: /api/generate');
+        const { prompt, count, questionType, categoryId, image, originalImage } = await req.json()
 
-        if (!prompt) {
-            return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+        if (!prompt && !image) {
+            return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
         }
 
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            return NextResponse.json({ error: 'Gemini API key is not configured' }, { status: 500 })
-        }
-
-        const generatedQuestions = await generateQuestions(prompt, count, questionType || 'Karışık')
+        const generatedQuestions = await generateQuestions(prompt, count, questionType || 'Karışık', image, originalImage)
 
         // Save to database
         const savedQuestions = await Promise.all(
@@ -28,6 +28,7 @@ export async function POST(req: Request) {
                         optionD: q.optionD,
                         correctAnswer: q.correctAnswer,
                         solution: q.solution,
+                        imageUrl: q.imageUrl,
                         // English translations
                         questionTextEN: q.questionTextEN,
                         optionAEN: q.optionAEN,

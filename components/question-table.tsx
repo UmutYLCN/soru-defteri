@@ -22,11 +22,13 @@ interface Question {
     optionCEN: string | null
     optionDEN: string | null
     solutionEN: string | null
+    imageUrl: string | null
     groupId: number | null
     group: {
         id: number
         stemText: string
         stemTextEN: string | null
+        imageUrl: string | null
     } | null
     category: {
         id: number
@@ -193,6 +195,16 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                         className="text-white font-medium mb-4 leading-relaxed block text-lg"
                     />
 
+                    {question.imageUrl && (
+                        <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
+                            <img
+                                src={question.imageUrl}
+                                alt="Question Diagram"
+                                className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                            />
+                        </div>
+                    )}
+
                     <OptionsGrid question={question} language={language} />
 
                     {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
@@ -279,8 +291,8 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                                                         key={n}
                                                         onClick={() => setVariantCount(n)}
                                                         className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${variantCount === n
-                                                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                                                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
                                                             }`}
                                                     >
                                                         {n}
@@ -321,6 +333,7 @@ interface GroupedQuestionCardProps {
     groupId: number
     stemText: string
     stemTextEN: string | null
+    imageUrl: string | null
     questions: Question[]
     startIndex: number
     onEdit: (question: Question) => void
@@ -328,7 +341,7 @@ interface GroupedQuestionCardProps {
     language: 'tr' | 'en'
 }
 
-function GroupedQuestionCard({ groupId, stemText, stemTextEN, questions, startIndex, onEdit, onDelete, language }: GroupedQuestionCardProps) {
+function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, questions, startIndex, onEdit, onDelete, language }: GroupedQuestionCardProps) {
     const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set())
 
     const toggleSolution = (id: number) => {
@@ -373,6 +386,15 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, questions, startIn
                         className="text-zinc-200 leading-relaxed block text-[15px]"
                     />
                 </div>
+                {imageUrl && (
+                    <div className="mt-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
+                        <img
+                            src={imageUrl}
+                            alt="Group Diagram"
+                            className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Sub-Questions */}
@@ -456,7 +478,7 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
     // Build display items: group questions by groupId, keep standalone questions as-is
     type DisplayItem =
         | { type: 'standalone'; question: Question; index: number }
-        | { type: 'group'; groupId: number; stemText: string; stemTextEN: string | null; questions: Question[]; startIndex: number }
+        | { type: 'group'; groupId: number; stemText: string; stemTextEN: string | null; imageUrl: string | null; questions: Question[]; startIndex: number }
 
     const displayItems: DisplayItem[] = []
     const processedGroupIds = new Set<number>()
@@ -474,6 +496,7 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
                 groupId: q.groupId,
                 stemText: q.group.stemText,
                 stemTextEN: q.group.stemTextEN,
+                imageUrl: q.group.imageUrl || q.imageUrl,
                 questions: groupQuestions,
                 startIndex: currentIndex,
             })
@@ -524,6 +547,7 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
                                     groupId={item.groupId}
                                     stemText={item.stemText}
                                     stemTextEN={item.stemTextEN}
+                                    imageUrl={item.imageUrl}
                                     questions={item.questions}
                                     startIndex={item.startIndex}
                                     onEdit={onEdit}

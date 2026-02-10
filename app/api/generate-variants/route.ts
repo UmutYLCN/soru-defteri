@@ -61,6 +61,7 @@ export async function POST(request: Request) {
                         optionCEN: variant.optionCEN || null,
                         optionDEN: variant.optionDEN || null,
                         solutionEN: variant.solutionEN || null,
+                        imageUrl: originalQuestion.imageUrl,
                         categoryId: originalQuestion.categoryId,
                     },
                     include: { category: true }
