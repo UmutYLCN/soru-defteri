@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
     try {
         const categories = await prisma.category.findMany({
@@ -20,14 +22,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const { name } = await request.json()
+        const { name, parentId } = await request.json()
 
         if (!name || typeof name !== 'string') {
             return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
         }
 
         const category = await prisma.category.create({
-            data: { name: name.trim() }
+            data: {
+                name: name.trim(),
+                parentId: parentId ? parseInt(parentId) : null
+            }
         })
 
         return NextResponse.json(category, { status: 201 })

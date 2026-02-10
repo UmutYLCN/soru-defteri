@@ -11,16 +11,31 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import { FolderPlus, Tag, Loader2 } from 'lucide-react'
 
+interface Category {
+    id: number
+    name: string
+    parentId?: number | null
+}
+
 interface CategoryFormProps {
+    categories: Category[]
     onSuccess: () => void
 }
 
-export function CategoryForm({ onSuccess }: CategoryFormProps) {
+export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [name, setName] = useState('')
+    const [parentId, setParentId] = useState<string>('none')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -30,11 +45,15 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
             const res = await fetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
+                body: JSON.stringify({
+                    name,
+                    parentId: parentId !== 'none' ? parentId : null
+                })
             })
 
             if (res.ok) {
                 setName('')
+                setParentId('none')
                 setOpen(false)
                 onSuccess()
             }
@@ -48,9 +67,13 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="border-zinc-700 bg-zinc-800/30 text-zinc-400 hover:bg-zinc-800 hover:text-white px-6 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2">
-                    <FolderPlus className="w-5 h-5" />
-                    <span>Yeni Kategori</span>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 transition-all duration-200"
+                    title="Yeni Kategori Ekle"
+                >
+                    <FolderPlus size={18} />
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[400px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
@@ -64,10 +87,28 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
                             id="categoryName"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="Örn: Matematik, Fizik, Tarih..."
+                            placeholder="Örn: Integrals, Logic Gates..."
                             className="bg-zinc-800 border-zinc-700 text-white"
                             required
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="parentCategory" className="text-zinc-300">Üst Kategori (Opsiyonel)</Label>
+                        <Select value={parentId} onValueChange={setParentId}>
+                            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                                <SelectValue placeholder="Ana ders seçin" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-800 border-zinc-700">
+                                <SelectItem value="none" className="text-zinc-400">Üst Kategori Yok (Ana Ders)</SelectItem>
+                                {Array.isArray(categories) && categories.filter(c => !c.parentId).map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id.toString()} className="text-white hover:bg-zinc-700">
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-[10px] text-zinc-500">Bir ders seçerseniz, bu kategori o dersin alt konusu olur.</p>
                     </div>
                     <Button
                         type="submit"

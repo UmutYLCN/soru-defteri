@@ -10,27 +10,29 @@ datasource db {
 model Category {
   id        Int        @id @default(autoincrement())
   name      String     @unique
+  parentId  Int?
   createdAt DateTime   @default(now())
+  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children  Category[] @relation("SubCategories")
   questions Question[]
 }
 
 model Question {
-  id            Int       @id @default(autoincrement())
-  categoryId    Int?
-  questionText  String
-  optionA       String
-  optionB       String
-  optionC       String
-  optionD       String
-  correctAnswer String
-  solution      String?
-  // English translations
+  id             Int       @id @default(autoincrement())
+  categoryId     Int?
+  questionText   String
+  optionA        String
+  optionB        String
+  optionC        String
+  optionD        String
+  correctAnswer  String
+  solution       String?
   questionTextEN String?
   optionAEN      String?
   optionBEN      String?
   optionCEN      String?
   optionDEN      String?
   solutionEN     String?
-  createdAt     DateTime  @default(now())
-  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime  @default(now())
+  category       Category? @relation(fields: [categoryId], references: [id])
 }

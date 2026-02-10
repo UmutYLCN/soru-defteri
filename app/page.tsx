@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import katex from 'katex'
+import { User, Trash2, LogOut, Settings, FolderTree } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
@@ -19,6 +20,7 @@ import {
 interface Category {
   id: number
   name: string
+  parentId?: number | null
   _count?: { questions: number }
 }
 
@@ -58,9 +60,8 @@ export default function Home() {
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
   const [pdfThumbnail, setPdfThumbnail] = useState<string | null>(null)
   const [language, setLanguage] = useState<'tr' | 'en'>('tr')
-  const [showImportModal, setShowImportModal] = useState(false)
-  const [importLoading, setImportLoading] = useState(false)
-  const [importCategory, setImportCategory] = useState<string>('')
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchData = useCallback(async (newLang?: 'tr' | 'en') => {
@@ -73,8 +74,8 @@ export default function Home() {
       const questionsData = await questionsRes.json()
       const categoriesData = await categoriesRes.json()
 
-      setQuestions(questionsData)
-      setCategories(categoriesData)
+      setQuestions(Array.isArray(questionsData) ? questionsData : [])
+      setCategories(Array.isArray(categoriesData) ? categoriesData : [])
       if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -87,7 +88,61 @@ export default function Home() {
     fetchData()
   }, [fetchData])
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
+  const handleResetDatabase = async () => {
+    const confirmMessage = language === 'tr'
+      ? 'Tüm veritabanı silinecek. Bu işlem geri alınamaz. Emin misiniz?'
+      : 'All database will be deleted. This action cannot be undone. Are you sure?'
+
+    if (window.confirm(confirmMessage)) {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/admin/reset-db', { method: 'POST' })
+        if (res.ok) {
+          alert(language === 'tr' ? 'Veritabanı başarıyla sıfırlandı.' : 'Database reset successfully.')
+          fetchData()
+        } else {
+          const data = await res.json()
+          alert(`Hata: ${data.error}`)
+        }
+      } catch (error: any) {
+        alert(`Hata: ${error.message}`)
+      } finally {
+        setLoading(false)
+        setShowUserMenu(false)
+      }
+    }
+  }
+
+
+  const handleSeedDatabase = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/seed-db', { method: 'POST' })
+      if (res.ok) {
+        alert(language === 'tr' ? 'Dersler başarıyla eklendi.' : 'Courses seeded successfully.')
+        window.location.reload() // Force a full page reload to clear any cache
+      } else {
+        const data = await res.json()
+        alert(`Hata: ${data.error}`)
+      }
+    } catch (error: any) {
+      alert(`Hata: ${error.message}`)
+    } finally {
+      setLoading(false)
+      setShowUserMenu(false)
+    }
+  }
 
   const handleEdit = (question: Question) => {
     setEditingQuestion(question)
@@ -235,6 +290,52 @@ export default function Home() {
                   EN
                 </button>
               </div>
+
+              {/* User Profile Menu */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${showUserMenu
+                    ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.2)]'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                    }`}
+                >
+                  <User size={20} />
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-4 py-2 border-b border-zinc-800 mb-2">
+                      <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">Yönetici Paneli</p>
+                      <p className="text-sm font-bold text-white">Admin User</p>
+                    </div>
+
+                    <button
+                      onClick={handleSeedDatabase}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-orange-500/10 hover:text-orange-500 transition-colors text-sm font-semibold"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <FolderTree size={16} />
+                      </div>
+                      <span>{language === 'tr' ? 'Hazır Dersleri Yükle' : 'Load Ready Courses'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleResetDatabase}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                        <Trash2 size={16} />
+                      </div>
+                      <span>{language === 'tr' ? 'Veritabanını Sıfırla' : 'Delete Database'}</span>
+                    </button>
+
+                    <div className="mt-2 pt-2 border-t border-zinc-800 px-2">
+                      <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">NoteDiur v1.0</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -242,46 +343,56 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Action Bar */}
-        <div className="flex flex-wrap items-center gap-4 mb-8">
-          <QuestionForm categories={categories} onSuccess={() => fetchData()} />
-          <AIGenerator categories={categories} onSuccess={(lang) => fetchData(lang)} />
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
+          {/* Left Action Group */}
+          <div className="flex items-center gap-3">
+            <QuestionForm categories={categories} onSuccess={() => fetchData()} />
+            <AIGenerator categories={categories} onSuccess={(lang) => fetchData(lang)} />
+          </div>
 
-          {/* NotebookLM Import Button */}
-          <Button
-            onClick={() => setShowImportModal(true)}
-            className="bg-zinc-900 border border-zinc-800 text-white hover:bg-zinc-800 hover:border-orange-500/50 font-semibold px-5 py-3 rounded-xl shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
-          >
-            NotebookLM Import
-          </Button>
+          {/* Right Action Group (Filters & Category Management) */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 pr-2 gap-1 group hover:border-orange-500/30 transition-all duration-300">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[180px] bg-transparent border-0 text-zinc-300 focus:ring-0 hover:text-white transition-colors">
+                  <SelectValue placeholder="Kategori" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                  <SelectItem value="all" className="hover:bg-zinc-800 cursor-pointer">
+                    Tüm Kategoriler
+                  </SelectItem>
+                  {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
+                    <Fragment key={parent.id}>
+                      <SelectItem value={parent.id.toString()} className="font-bold text-orange-500 bg-orange-500/5 mt-1">
+                        {parent.name}
+                      </SelectItem>
+                      {categories.filter(c => c.parentId === parent.id).map(child => (
+                        <SelectItem key={child.id} value={child.id.toString()} className="pl-6 text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer">
+                          ㄴ {child.name}
+                        </SelectItem>
+                      ))}
+                    </Fragment>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="w-px h-4 bg-zinc-800 mx-1" />
+              <CategoryForm categories={categories} onSuccess={() => fetchData()} />
+            </div>
 
-          <div className="flex-1" />
-
-          {/* Category Filter */}
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[180px] bg-zinc-800 border-zinc-700 text-white">
-              <SelectValue placeholder="Kategori filtrele" />
-            </SelectTrigger>
-            <SelectContent className="bg-zinc-800 border-zinc-700">
-              <SelectItem value="all" className="text-white hover:bg-zinc-700">
-                Tüm Kategoriler
-              </SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id.toString()} className="text-white hover:bg-zinc-700">
-                  {cat.name} ({cat._count?.questions || 0})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Export PDF Button - Now opens dialog */}
-          <Button
-            onClick={() => setShowExportDialog(true)}
-            disabled={exporting || filteredQuestions.length === 0}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
-          >
-            {exporting ? '⏳ Oluşturuluyor...' : '📄 PDF İndir'}
-          </Button>
+            {/* Export PDF Button */}
+            <Button
+              onClick={() => setShowExportDialog(true)}
+              disabled={exporting || filteredQuestions.length === 0}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-900/20 hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95"
+            >
+              {exporting ? '⏳...' : (
+                <>
+                  <Trash2 size={18} className="rotate-180" />
+                  <span>PDF EXPORT</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
 
@@ -425,109 +536,9 @@ export default function Home() {
         onSuccess={fetchData}
       />
 
-      {/* NotebookLM Import Modal */}
-      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${showImportModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !importLoading && setShowImportModal(false)} />
-        <div className="relative bg-zinc-900 border border-zinc-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-          <h3 className="text-xl font-bold text-white mb-2">📚 NotebookLM Import</h3>
-          <p className="text-zinc-400 mb-6 text-sm">NotebookLM'den export ettiğiniz JSON dosyasını yükleyin. AI otomatik olarak şıkları ve İngilizce çevirileri oluşturacak.</p>
-
-          {/* Category Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-300 mb-2">Kategori</label>
-            <Select value={importCategory} onValueChange={setImportCategory}>
-              <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-white">
-                <SelectValue placeholder="Kategori seçin" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700 z-[200]">
-                <SelectItem value="none" className="text-zinc-400 hover:bg-zinc-700">
-                  Kategori Yok
-                </SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id.toString()} className="text-white hover:bg-zinc-700">
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* File Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-zinc-300 mb-2">JSON Dosyası</label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept=".json"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-500 file:text-white hover:file:bg-orange-600"
-            />
-          </div>
-
-          {/* Status */}
-          {importLoading && (
-            <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="animate-spin w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full" />
-                <span className="text-orange-200 text-sm">AI sorularınızı işliyor... Bu biraz zaman alabilir.</span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => setShowImportModal(false)}
-              disabled={importLoading}
-              className="flex-1 text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              Vazgeç
-            </Button>
-            <Button
-              onClick={async () => {
-                const file = fileInputRef.current?.files?.[0]
-                if (!file) {
-                  alert('Lütfen bir dosya seçin')
-                  return
-                }
-
-                setImportLoading(true)
-                try {
-                  const text = await file.text()
-                  const data = JSON.parse(text)
-
-                  const res = await fetch('/api/import-notebook', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data, categoryId: importCategory && importCategory !== 'none' ? importCategory : undefined })
-                  })
-
-                  const result = await res.json()
-
-                  if (res.ok) {
-                    alert(`✅ ${result.success} soru başarıyla eklendi!${result.failed > 0 ? `\n⚠️ ${result.failed} soru eklenemedi.` : ''}`)
-                    setShowImportModal(false)
-                    fetchData()
-                  } else {
-                    alert(`Hata: ${result.error}`)
-                  }
-                } catch (error: any) {
-                  console.error('Import error:', error)
-                  alert(`Hata: ${error.message}`)
-                } finally {
-                  setImportLoading(false)
-                }
-              }}
-              disabled={importLoading}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold"
-            >
-              {importLoading ? 'İşleniyor...' : 'İçe Aktar'}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Hidden PDF Export Content */}
-      <div
+      < div
         id="pdf-export-content"
         style={{
           display: 'none',
@@ -536,10 +547,11 @@ export default function Home() {
           color: 'black',
           padding: '20mm',
           fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        }}
+        }
+        }
       >
         {/* PDF Header */}
-        <div style={{
+        < div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -557,110 +569,112 @@ export default function Home() {
             <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>{filteredQuestions.length} Soru</div>
             <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date().toLocaleDateString('tr-TR')}</div>
           </div>
-        </div>
+        </div >
 
         {/* Questions List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
-          {filteredQuestions.map((q, i) => (
-            <div key={q.id} style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-              {/* Question Header */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                <span style={{
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  width: '28px',
-                  height: '28px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '6px',
-                  flexShrink: 0
-                }}>
-                  {i + 1}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '15.5px', lineHeight: '1.6', color: '#111827', fontWeight: '500' }}>
-                    <QuestionTextDisplay text={q.questionText} />
+        < div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
+          {
+            filteredQuestions.map((q, i) => (
+              <div key={q.id} style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                {/* Question Header */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                  <span style={{
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    flexShrink: 0
+                  }}>
+                    {i + 1}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '15.5px', lineHeight: '1.6', color: '#111827', fontWeight: '500' }}>
+                      <QuestionTextDisplay text={q.questionText} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Options Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '10px 20px',
-                paddingLeft: '40px',
-                marginBottom: (includeSolutions && q.solution) ? '15px' : '0'
-              }}>
-                {(['A', 'B', 'C', 'D'] as const).map((opt) => (
-                  <div key={opt} style={{ display: 'flex', gap: '8px', fontSize: '14.5px' }}>
-                    <span style={{ fontWeight: 'bold', color: '#4b5563' }}>{opt})</span>
-                    <QuestionTextDisplay text={q[`option${opt}` as keyof typeof q] as string} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Solution Block */}
-              {includeSolutions && q.solution && (
+                {/* Options Grid */}
                 <div style={{
-                  marginLeft: '40px',
-                  marginTop: '15px',
-                  padding: '12px 15px',
-                  backgroundColor: '#f9fafb',
-                  borderLeft: '3px solid #f97316',
-                  borderRadius: '4px'
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '10px 20px',
+                  paddingLeft: '40px',
+                  marginBottom: (includeSolutions && q.solution) ? '15px' : '0'
                 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {q.solution.includes('STEP_START') ? (
-                      q.solution.split('STEP_START').filter(Boolean).map((section, index) => {
-                        const [title, ...contentParts] = section.split('STEP_END');
-                        const content = contentParts.join('STEP_END');
-                        return (
-                          <div key={index} style={{ marginBottom: '4px' }}>
-                            {title && (
-                              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ea580c', textTransform: 'uppercase', marginBottom: '2px' }}>
-                                {title.trim()}
-                              </div>
-                            )}
-                            <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
-                              <QuestionTextDisplay text={content.trim()} />
-                            </div>
-                          </div>
-                        )
-                      })
-                    ) : q.solution.match(/(\d+\.\s*Adım|Adım\s*\d+)/i) ? (
-                      q.solution.split(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/gi).filter(Boolean).map((part, i, arr) => {
-                        if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/i)) {
+                  {(['A', 'B', 'C', 'D'] as const).map((opt) => (
+                    <div key={opt} style={{ display: 'flex', gap: '8px', fontSize: '14.5px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#4b5563' }}>{opt})</span>
+                      <QuestionTextDisplay text={q[`option${opt}` as keyof typeof q] as string} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Solution Block */}
+                {includeSolutions && q.solution && (
+                  <div style={{
+                    marginLeft: '40px',
+                    marginTop: '15px',
+                    padding: '12px 15px',
+                    backgroundColor: '#f9fafb',
+                    borderLeft: '3px solid #f97316',
+                    borderRadius: '4px'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {q.solution.includes('STEP_START') ? (
+                        q.solution.split('STEP_START').filter(Boolean).map((section, index) => {
+                          const [title, ...contentParts] = section.split('STEP_END');
+                          const content = contentParts.join('STEP_END');
                           return (
-                            <div key={i} style={{ marginBottom: '8px' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ea580c', textTransform: 'uppercase', marginBottom: '1px' }}>
-                                {part.trim().replace(/:$/, '')}
-                              </div>
+                            <div key={index} style={{ marginBottom: '4px' }}>
+                              {title && (
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ea580c', textTransform: 'uppercase', marginBottom: '2px' }}>
+                                  {title.trim()}
+                                </div>
+                              )}
                               <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
-                                <QuestionTextDisplay text={arr[i + 1]?.trim() || ''} />
+                                <QuestionTextDisplay text={content.trim()} />
                               </div>
                             </div>
                           )
-                        }
-                        return null;
-                      })
-                    ) : (
-                      <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
-                        <QuestionTextDisplay text={q.solution} />
-                      </div>
-                    )}
+                        })
+                      ) : q.solution.match(/(\d+\.\s*Adım|Adım\s*\d+)/i) ? (
+                        q.solution.split(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/gi).filter(Boolean).map((part, i, arr) => {
+                          if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?)/i)) {
+                            return (
+                              <div key={i} style={{ marginBottom: '8px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ea580c', textTransform: 'uppercase', marginBottom: '1px' }}>
+                                  {part.trim().replace(/:$/, '')}
+                                </div>
+                                <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
+                                  <QuestionTextDisplay text={arr[i + 1]?.trim() || ''} />
+                                </div>
+                              </div>
+                            )
+                          }
+                          return null;
+                        })
+                      ) : (
+                        <div style={{ fontSize: '12.5px', color: '#374151', lineHeight: '1.4' }}>
+                          <QuestionTextDisplay text={q.solution} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                )}
+              </div>
+            ))
+          }
+        </div >
 
         {/* Answer Key Page */}
-        <div style={{
+        < div style={{
           marginTop: '60px',
           paddingTop: '40px',
           borderTop: '2px dashed #d1d5db',
@@ -694,8 +708,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
     </div >
   )
 }

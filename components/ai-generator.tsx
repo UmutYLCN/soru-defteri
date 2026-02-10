@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -24,6 +24,7 @@ import { Wand2, Loader2, BookOpen, AlertCircle } from 'lucide-react'
 interface Category {
     id: number
     name: string
+    parentId?: number | null
 }
 
 interface AIGeneratorProps {
@@ -88,9 +89,9 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0">
-                    <Wand2 className="w-5 h-5" />
-                    <span>AI Soru Üret</span>
+                <Button className="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-orange-500/50 font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-black/20 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95">
+                    <Wand2 className="w-5 h-5 text-orange-500" />
+                    <span>AI Üret</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white p-0 custom-scrollbar">
@@ -169,11 +170,21 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     <SelectValue placeholder="Bir kategori seçin *" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id.toString()}>
-                                            {cat.name}
-                                        </SelectItem>
+                                    {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
+                                        <Fragment key={parent.id}>
+                                            <SelectItem value={parent.id.toString()} className="text-white font-bold bg-zinc-800/50">
+                                                {parent.name}
+                                            </SelectItem>
+                                            {categories.filter(c => c.parentId === parent.id).map(child => (
+                                                <SelectItem key={child.id} value={child.id.toString()} className="text-zinc-300 pl-6 hover:bg-zinc-700">
+                                                    ㄴ {child.name}
+                                                </SelectItem>
+                                            ))}
+                                        </Fragment>
                                     ))}
+                                    {(!Array.isArray(categories) || categories.length === 0) && (
+                                        <div className="p-2 text-sm text-zinc-500 text-center">Önce kategori oluşturun</div>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
