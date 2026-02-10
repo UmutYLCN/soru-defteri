@@ -134,6 +134,87 @@ Return ONLY the JSON array. No extra text.`;
 }
 
 
+export async function generateGroupedQuestions(prompt: string, subQuestionCount: number) {
+  const systemPrompt = `You are a world-class exam question writer for Turkish university-level courses (midterm/final exam standard).
+
+Your task: Create an INTEGRATED/GROUPED question set based on: "${prompt}"
+
+This is the "Soru X-Y" format used in Turkish university exams where:
+- There is ONE shared scenario/context (stem text) that describes a physical setup, circuit, diagram, or situation.
+- Multiple sub-questions (${subQuestionCount}) are derived from that SAME scenario.
+- Each sub-question explores a DIFFERENT aspect of the same problem.
+- Sub-questions may build on each other (e.g., Q1 finds current, Q2 uses that to find voltage).
+
+REQUIREMENTS:
+1. Create a rich, detailed stem/scenario text that provides enough context for all sub-questions.
+2. The stem should describe a specific physical/mathematical setup (like a circuit, a charge distribution, a mechanical system, etc.)
+3. Each sub-question should ask about a DIFFERENT quantity, relationship, or condition within the same scenario.
+4. Sub-questions should progress in complexity (first easier, last harder).
+5. Each sub-question has exactly 4 options (A, B, C, D) and ONE correct answer.
+
+DISTRACTOR ENGINEERING:
+- Wrong options should come from common student mistakes (sign errors, wrong formulas, unit errors).
+
+SOLUTION FORMAT:
+- STEP_START Adim [No]: [Kisa Baslik] STEP_END [Explanation and Calculation]
+- Use $...$ for LaTeX math with double backslashes.
+
+Return a JSON object with this EXACT structure:
+{
+  "stemText": "Turkish stem/scenario text describing the shared context",
+  "stemTextEN": "English translation of the stem",
+  "questions": [
+    {
+      "questionText": "Sub-question 1 in Turkish (just the question, NOT the stem)",
+      "optionA": "...", "optionB": "...", "optionC": "...", "optionD": "...",
+      "correctAnswer": "A or B or C or D",
+      "solution": "Step-by-step solution in Turkish",
+      "questionTextEN": "English translation",
+      "optionAEN": "...", "optionBEN": "...", "optionCEN": "...", "optionDEN": "...",
+      "solutionEN": "English solution"
+    }
+  ]
+}
+
+IMPORTANT:
+- The "stemText" contains the SHARED context only.
+- Each "questionText" contains ONLY the specific sub-question, NOT the stem.
+- Verify all answers are correct. Return ONLY valid JSON.`;
+
+  const result = await geminiModel.generateContent(systemPrompt);
+  const response = await result.response;
+  let text = response.text();
+
+  try {
+    const cleanedText = text.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+    const parsed = JSON.parse(cleanedText);
+
+    const verifiedQuestions = await Promise.all(
+      parsed.questions.map((q: any) => verifyAndFixQuestion(q))
+    );
+
+    return {
+      stemText: parsed.stemText,
+      stemTextEN: parsed.stemTextEN,
+      questions: verifiedQuestions
+    };
+  } catch (e) {
+    console.error("JSON Parse Error in generateGroupedQuestions. Raw text:", text);
+    const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
+    try {
+      const parsed = JSON.parse(fixedText);
+      return {
+        stemText: parsed.stemText,
+        stemTextEN: parsed.stemTextEN,
+        questions: parsed.questions
+      };
+    } catch (innerError) {
+      throw new Error("Model generated invalid JSON structure. Please try again.");
+    }
+  }
+}
+
+
 // Types for NotebookLM import
 interface NotebookQuestion {
   question: string;

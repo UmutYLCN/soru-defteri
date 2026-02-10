@@ -8,18 +8,30 @@ datasource db {
 }
 
 model Category {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  parentId  Int?
-  createdAt DateTime   @default(now())
-  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
-  children  Category[] @relation("SubCategories")
-  questions Question[]
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  parentId       Int?
+  createdAt      DateTime         @default(now())
+  parent         Category?        @relation("SubCategories", fields: [parentId], references: [id])
+  children       Category[]       @relation("SubCategories")
+  questions      Question[]
+  questionGroups QuestionGroup[]
+}
+
+model QuestionGroup {
+  id           Int       @id @default(autoincrement())
+  stemText     String
+  stemTextEN   String?
+  categoryId   Int?
+  createdAt    DateTime  @default(now())
+  category     Category? @relation(fields: [categoryId], references: [id])
+  questions    Question[]
 }
 
 model Question {
-  id             Int       @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   categoryId     Int?
+  groupId        Int?
   questionText   String
   optionA        String
   optionB        String
@@ -33,6 +45,7 @@ model Question {
   optionCEN      String?
   optionDEN      String?
   solutionEN     String?
-  createdAt      DateTime  @default(now())
-  category       Category? @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime       @default(now())
+  category       Category?      @relation(fields: [categoryId], references: [id])
+  group          QuestionGroup? @relation(fields: [groupId], references: [id])
 }

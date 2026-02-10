@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Wand2, Loader2, BookOpen, AlertCircle, Calculator, Brain, BarChart3, Shuffle } from 'lucide-react'
+import { Wand2, Loader2, BookOpen, AlertCircle, Calculator, Brain, BarChart3, Shuffle, Layers } from 'lucide-react'
 
 interface Category {
     id: number
@@ -41,9 +41,11 @@ const questionTypes = [
 export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [mode, setMode] = useState<'normal' | 'integrated'>('normal')
     const [prompt, setPrompt] = useState('')
     const [questionType, setQuestionType] = useState('Karışık')
     const [count, setCount] = useState('5')
+    const [integratedCount, setIntegratedCount] = useState('3')
     const [categoryId, setCategoryId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
 
@@ -62,15 +64,24 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
         setError(null)
 
         try {
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const endpoint = mode === 'normal' ? '/api/generate' : '/api/generate-grouped'
+            const body = mode === 'normal'
+                ? {
                     prompt,
                     questionType,
                     count: parseInt(count),
                     categoryId: categoryId || null,
-                }),
+                }
+                : {
+                    prompt,
+                    subQuestionCount: parseInt(integratedCount),
+                    categoryId: categoryId || null,
+                }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
             })
 
             const data = await response.json()
@@ -110,67 +121,122 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                 </div>
 
                 <div className="p-6 space-y-6">
+                    {/* Mode Selection */}
+                    <div className="flex p-1 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                        <button
+                            onClick={() => setMode('normal')}
+                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${mode === 'normal'
+                                ? 'bg-zinc-700 text-white shadow-lg'
+                                : 'text-zinc-500 hover:text-zinc-300'
+                                }`}
+                        >
+                            <Shuffle className="w-4 h-4" />
+                            Bağımsız Sorular
+                        </button>
+                        <button
+                            onClick={() => setMode('integrated')}
+                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${mode === 'integrated'
+                                ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                                : 'text-zinc-500 hover:text-zinc-300'
+                                }`}
+                        >
+                            <Layers className="w-4 h-4" />
+                            Bütünleşik Soru (X-Y)
+                        </button>
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="prompt" className="text-zinc-300 flex items-center gap-2">
                             <BookOpen className="w-4 h-4" />
-                            Konu veya Örnek Soru
+                            {mode === 'normal' ? 'Konu veya Örnek Soru' : 'Senaryo / Problem Tanımı'}
                         </Label>
                         <Textarea
                             id="prompt"
-                            placeholder="Örn: Newton'un hareket yasaları hakkında soru üret..."
+                            placeholder={mode === 'normal'
+                                ? "Örn: Newton'un hareket yasaları hakkında soru üret..."
+                                : "Örn: Bir RLC devresi ve bu devredeki elemanların değerlerini içeren bir senaryo yazın..."
+                            }
                             className="bg-zinc-800/50 border-zinc-700 focus:border-orange-500/50 focus:ring-orange-500/50 min-h-[120px] resize-none text-zinc-200 placeholder:text-zinc-600"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                         />
                     </div>
 
-                    {/* Question Type Selector */}
-                    <div className="space-y-3">
-                        <Label className="text-zinc-300">Soru Tipi</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {questionTypes.map(type => {
-                                const Icon = type.icon
-                                return (
-                                    <button
-                                        key={type.value}
-                                        onClick={() => setQuestionType(type.value)}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left ${questionType === type.value
-                                            ? 'border-orange-500/50 bg-orange-500/10 shadow-lg shadow-orange-500/5'
-                                            : 'border-zinc-800 bg-zinc-800/30 hover:border-zinc-700 hover:bg-zinc-800/60'
-                                            }`}
-                                    >
-                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${questionType === type.value
-                                            ? 'bg-orange-500/20 text-orange-500'
-                                            : 'bg-zinc-800 text-zinc-500'
-                                            }`}>
-                                            <Icon className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <div className={`text-sm font-bold ${questionType === type.value ? 'text-orange-400' : 'text-zinc-300'
+                    {mode === 'normal' ? (
+                        /* Question Type Selector for Normal Questions */
+                        <div className="space-y-3">
+                            <Label className="text-zinc-300">Soru Tipi</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {questionTypes.map(type => {
+                                    const Icon = type.icon
+                                    return (
+                                        <button
+                                            key={type.value}
+                                            onClick={() => setQuestionType(type.value)}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left ${questionType === type.value
+                                                ? 'border-orange-500/50 bg-orange-500/10 shadow-lg shadow-orange-500/5'
+                                                : 'border-zinc-800 bg-zinc-800/30 hover:border-zinc-700 hover:bg-zinc-800/60'
+                                                }`}
+                                        >
+                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${questionType === type.value
+                                                ? 'bg-orange-500/20 text-orange-500'
+                                                : 'bg-zinc-800 text-zinc-500'
                                                 }`}>
-                                                {type.label}
+                                                <Icon className="w-4 h-4" />
                                             </div>
-                                            <div className="text-[11px] text-zinc-500">{type.desc}</div>
-                                        </div>
-                                    </button>
-                                )
-                            })}
+                                            <div>
+                                                <div className={`text-sm font-bold ${questionType === type.value ? 'text-orange-400' : 'text-zinc-300'
+                                                    }`}>
+                                                    {type.label}
+                                                </div>
+                                                <div className="text-[11px] text-zinc-500">{type.desc}</div>
+                                            </div>
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        /* Integrated Info for Grouped Questions */
+                        <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/20 space-y-3">
+                            <div className="flex items-center gap-2 text-violet-400 font-bold text-sm">
+                                <Layers className="w-4 h-4" />
+                                Bütünleşik Soru Yapısı
+                            </div>
+                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                Bu modda, verdiğiniz girdiye dayalı <strong>ortak bir senaryo (basamak)</strong> ve bu senaryoya bağlı birden fazla alt soru üretilir. Her alt soru, senaryonun farklı bir yönünü veya ardışık bir adımını test eder.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label className="text-zinc-300">Soru Sayısı</Label>
-                            <Select value={count} onValueChange={setCount}>
-                                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-zinc-200">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                                    <SelectItem value="3">3 Soru</SelectItem>
-                                    <SelectItem value="5">5 Soru</SelectItem>
-                                    <SelectItem value="10">10 Soru</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label className="text-zinc-300">
+                                {mode === 'normal' ? 'Soru Sayısı' : 'Alt Soru Sayısı'}
+                            </Label>
+                            {mode === 'normal' ? (
+                                <Select value={count} onValueChange={setCount}>
+                                    <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-zinc-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                                        <SelectItem value="3">3 Soru</SelectItem>
+                                        <SelectItem value="5">5 Soru</SelectItem>
+                                        <SelectItem value="10">10 Soru</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Select value={integratedCount} onValueChange={setIntegratedCount}>
+                                    <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-zinc-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                                        <SelectItem value="2">2 Alt Soru</SelectItem>
+                                        <SelectItem value="3">3 Alt Soru</SelectItem>
+                                        <SelectItem value="4">4 Alt Soru</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
 
                         <div className="space-y-2">

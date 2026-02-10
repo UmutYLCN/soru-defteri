@@ -39,6 +39,12 @@ interface Question {
   optionCEN: string | null
   optionDEN: string | null
   solutionEN: string | null
+  groupId: number | null
+  group: {
+    id: number
+    stemText: string
+    stemTextEN: string | null
+  } | null
   category: {
     id: number
     name: string

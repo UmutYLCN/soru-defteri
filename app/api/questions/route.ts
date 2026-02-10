@@ -5,7 +5,8 @@ export async function GET() {
     try {
         const questions = await prisma.question.findMany({
             include: {
-                category: true
+                category: true,
+                group: true
             },
             orderBy: { createdAt: 'desc' }
         })
