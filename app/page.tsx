@@ -357,7 +357,7 @@ export default function Home() {
           {/* Left Action Group */}
           <div className="flex items-center gap-3">
             <QuestionForm categories={categories} onSuccess={() => fetchData()} />
-            <AIGenerator categories={categories} onSuccess={(lang) => fetchData(lang)} />
+            <AIGenerator categories={categories} onSuccess={() => fetchData()} />
           </div>
 
           {/* Right Action Group (Filters & Category Management) */}

@@ -39,46 +39,80 @@ Return the corrected question data in the EXACT same JSON format as the input. R
   }
 }
 
-export async function generateQuestions(prompt: string, count: number, level: string, language: string) {
-  const systemPrompt = `You are an expert educational content creator. Generate ${count} multiple-choice questions based on the following context/topic: "${prompt}".
-  
-  DIVERSITY & VARIETY RULES:
-  1. Each question must be UNIQUE. Do not repeat the exact same question.
-  2. NUMERICAL VARIETY: For math/physics problems, use DIFFERENT numerical values for each question.
-  3. SIMILARITY LIMIT: No more than 2 questions should have similar logic or scenarios. Ensure a broad coverage of the topic.
-  4. SCENARIO VARIATION: Vary the context (e.g., if one question is about a block on a slope, the next could be about a flat surface or a different physical setup).
+export async function generateQuestions(prompt: string, count: number, questionType: string) {
+  const typeInstructions: Record<string, string> = {
+    'Hesaplama': `QUESTION TYPE: Calculation-based problems.
+    - Questions MUST require numerical computation, formula application, or multi-step mathematical reasoning.
+    - Include realistic physical scenarios with specific numerical values.
+    - Ensure answers are clean numbers (avoid overly complex decimals).`,
+    'Kavramsal': `QUESTION TYPE: Conceptual understanding questions.
+    - Questions should test DEEP understanding of principles, not just memorization.
+    - Include "why" and "what happens if" scenarios.
+    - Use real-world analogies and thought experiments.
+    - At least 2 questions should require comparing/contrasting concepts.`,
+    'Grafik/Tablo': `QUESTION TYPE: Graph and Table interpretation questions.
+    - Questions should describe a graph, chart, or data table in text form.
+    - Ask students to interpret trends, calculate slopes, identify relationships, or predict outcomes.
+    - Include specific data points they must analyze.
+    - Use formats like "Aşağıdaki tabloya göre..." or "Grafiğe göre...".`,
+    'Karışık': `QUESTION TYPE: Mixed variety.
+    - Include a balanced mix of calculation, conceptual, and data interpretation questions.
+    - Ensure variety in question structure and cognitive demands.
+    - At least one question should require multi-step reasoning.`
+  };
 
-  Requirements:
-  1. Difficulty Level: ${level}
-  2. Main Language: ${language}
-  3. Format: Return a valid JSON array of objects.
-  4. Each object must have these field names: 
-     questionText, optionA, optionB, optionC, optionD, correctAnswer, solution,
-     questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
-  5. Strictly provide exactly 4 options (A, B, C, D). Do NOT provide more or fewer options.
-  6. **DUAL LANGUAGE REQUIREMENT:**
-     - Generate the primary content in ${language}.
-     - If the primary language is NOT English, provide an accurate English translation in the "EN" fields.
-     - If the primary language IS English, provide an accurate Turkish translation in the non-EN fields.
-  7. **LOGIC & ACCURACY:**
-     - You MUST solve the question yourself first.
-     - The "correctAnswer" MUST correspond to the mathematically/logically correct option (e.g., "A").
-     - Ensure all options are distinct and only ONE is correct.
-  8. **SOLUTION FORMAT:**
-     - The "solution" and "solutionEN" fields MUST be CONCISE and STEP-BY-STEP. 
-     - NO long paragraphs or unnecessary apologies.
-     - Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Short Explanation & Calculation]
-     - Example: "solution": "STEP_START Adım 1: Formül STEP_END $F=m \\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\cdot 5 = 10N$."
-     - Use $...$ for ALL math with double backslashes for LaTeX (e.g., \\\\frac{a}{b}).
-  
-  IMPORTANT: Double-check that your "correctAnswer" (A, B, C, or D) actually matches the result in your "solution". Return ONLY the JSON array. Do not include any text outside the JSON array.`;
+  const systemPrompt = `You are a world-class exam question writer for Turkish university entrance exams (TYT/AYT level). Generate ${count} multiple-choice questions based on: "${prompt}".
+
+${typeInstructions[questionType] || typeInstructions['Karışık']}
+
+EXAM-LEVEL DIFFICULTY:
+- Questions should be at competitive exam standard (TYT/AYT difficulty).
+- Include tricky but fair questions that distinguish strong students.
+- Avoid trivially easy or impossibly hard questions.
+
+DISTRACTOR (WRONG OPTION) ENGINEERING:
+- CRITICAL: Wrong options must NOT be random numbers. Each wrong option should result from a COMMON STUDENT MISTAKE:
+  • Forgetting a sign (e.g., using + instead of −)
+  • Using wrong formula (e.g., using v=d/t instead of v²=v₀²+2as)
+  • Forgetting unit conversion (e.g., cm vs m)
+  • Off-by-one errors or partial calculations
+  • Conceptual misconceptions
+- This makes the question pedagogically valuable.
+
+DIVERSITY & VARIETY:
+1. Each question must be UNIQUE - no repeated logic.
+2. Use DIFFERENT numerical values for each question.
+3. No more than 2 questions should use similar setups.
+4. Vary contexts and scenarios broadly.
+5. The correct answer letter MUST vary (don't always use the same letter).
+
+FORMAT REQUIREMENTS:
+1. Return a valid JSON array.
+2. Each object fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN
+3. ALWAYS provide BOTH Turkish AND English versions.
+4. Exactly 4 options (A, B, C, D), only ONE correct.
+
+SOLUTION FORMAT:
+- Must be CONCISE, STEP-BY-STEP.
+- Format: STEP_START Adım [No]: [Kısa Başlık] STEP_END [Explanation & Calculation]
+- Use $...$ for ALL math with double backslashes for LaTeX.
+- NO apologies, NO unnecessary commentary. Just clean, professional solutions.
+- Example: "STEP_START Adım 1: Formül STEP_END $F=m \\\\cdot a$ kullanılır. STEP_START Adım 2: Hesap STEP_END $F=2 \\\\cdot 5 = 10$ N."
+
+QUALITY CHECKLIST (verify before returning):
+✓ Each correctAnswer matches the actual solution result
+✓ All 4 options are distinct
+✓ Wrong options come from realistic mistakes
+✓ Solutions are mathematically/logically flawless
+✓ Both TR and EN versions are accurate translations
+
+Return ONLY the JSON array. No extra text.`;
 
   const result = await geminiModel.generateContent(systemPrompt);
   const response = await result.response;
   let text = response.text();
 
   try {
-    // Clean up potential markdown formatting just in case
     const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const questions = JSON.parse(cleanedText);
 
@@ -90,8 +124,6 @@ export async function generateQuestions(prompt: string, count: number, level: st
     return verifiedQuestions;
   } catch (e) {
     console.error("JSON Parse Error. Raw text:", text);
-    // Fallback: try to fix common escaping issues and potential multiple 'solution' keys if possible
-    // But primarily handle the backslash issue
     const fixedText = text.replace(/(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
     try {
       return JSON.parse(fixedText);
@@ -100,6 +132,7 @@ export async function generateQuestions(prompt: string, count: number, level: st
     }
   }
 }
+
 
 // Types for NotebookLM import
 interface NotebookQuestion {

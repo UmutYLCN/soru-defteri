@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
     try {
-        const { prompt, count, level, language, categoryId } = await req.json()
+        const { prompt, count, questionType, categoryId } = await req.json()
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Gemini API key is not configured' }, { status: 500 })
         }
 
-        const generatedQuestions = await generateQuestions(prompt, count, level, language)
+        const generatedQuestions = await generateQuestions(prompt, count, questionType || 'Karışık')
 
         // Save to database
         const savedQuestions = await Promise.all(

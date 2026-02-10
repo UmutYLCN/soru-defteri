@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
     DialogTrigger,
     DialogDescription,
@@ -19,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Wand2, Loader2, BookOpen, AlertCircle } from 'lucide-react'
+import { Wand2, Loader2, BookOpen, AlertCircle, Calculator, Brain, BarChart3, Shuffle } from 'lucide-react'
 
 interface Category {
     id: number
@@ -32,12 +31,18 @@ interface AIGeneratorProps {
     onSuccess: (lang?: 'tr' | 'en') => void
 }
 
+const questionTypes = [
+    { value: 'Hesaplama', label: 'Hesaplama', icon: Calculator, desc: 'Sayısal problem çözme' },
+    { value: 'Kavramsal', label: 'Kavramsal', icon: Brain, desc: 'Teori ve anlama soruları' },
+    { value: 'Grafik/Tablo', label: 'Grafik / Tablo', icon: BarChart3, desc: 'Veri yorumlama' },
+    { value: 'Karışık', label: 'Karışık', icon: Shuffle, desc: 'Hepsinden karışık' },
+]
+
 export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [prompt, setPrompt] = useState('')
-    const [level, setLevel] = useState('Orta')
-    const [language, setLanguage] = useState('Türkçe')
+    const [questionType, setQuestionType] = useState('Karışık')
     const [count, setCount] = useState('5')
     const [categoryId, setCategoryId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
@@ -62,8 +67,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt,
-                    level,
-                    language,
+                    questionType,
                     count: parseInt(count),
                     categoryId: categoryId || null,
                 }),
@@ -75,7 +79,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                 throw new Error(data.error || 'Bir hata oluştu')
             }
 
-            onSuccess(language === 'İngilizce' ? 'en' : 'tr')
+            onSuccess()
             setOpen(false)
             setPrompt('')
             setError(null)
@@ -101,7 +105,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                         AI Soru Üretici
                     </DialogTitle>
                     <DialogDescription className="text-zinc-400 mt-1">
-                        Gemini 1.5 Flash ile saniyeler içinde kaliteli sorular hazırlayın.
+                        Gemini AI ile sınav kalitesinde sorular üretin. Her soru otomatik olarak Türkçe ve İngilizce üretilir.
                     </DialogDescription>
                 </div>
 
@@ -120,32 +124,37 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label className="text-zinc-300">Zorluk Seviyesi</Label>
-                            <Select value={level} onValueChange={setLevel}>
-                                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-zinc-200">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                                    <SelectItem value="Kolay">Kolay</SelectItem>
-                                    <SelectItem value="Orta">Orta</SelectItem>
-                                    <SelectItem value="Zor">Zor</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-zinc-300">Dil</Label>
-                            <Select value={language} onValueChange={setLanguage}>
-                                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-zinc-200">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                                    <SelectItem value="Türkçe">Türkçe</SelectItem>
-                                    <SelectItem value="İngilizce">İngilizce</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    {/* Question Type Selector */}
+                    <div className="space-y-3">
+                        <Label className="text-zinc-300">Soru Tipi</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {questionTypes.map(type => {
+                                const Icon = type.icon
+                                return (
+                                    <button
+                                        key={type.value}
+                                        onClick={() => setQuestionType(type.value)}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left ${questionType === type.value
+                                                ? 'border-orange-500/50 bg-orange-500/10 shadow-lg shadow-orange-500/5'
+                                                : 'border-zinc-800 bg-zinc-800/30 hover:border-zinc-700 hover:bg-zinc-800/60'
+                                            }`}
+                                    >
+                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${questionType === type.value
+                                                ? 'bg-orange-500/20 text-orange-500'
+                                                : 'bg-zinc-800 text-zinc-500'
+                                            }`}>
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <div className={`text-sm font-bold ${questionType === type.value ? 'text-orange-400' : 'text-zinc-300'
+                                                }`}>
+                                                {type.label}
+                                            </div>
+                                            <div className="text-[11px] text-zinc-500">{type.desc}</div>
+                                        </div>
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -157,6 +166,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                                    <SelectItem value="3">3 Soru</SelectItem>
                                     <SelectItem value="5">5 Soru</SelectItem>
                                     <SelectItem value="10">10 Soru</SelectItem>
                                 </SelectContent>
@@ -187,6 +197,14 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     )}
                                 </SelectContent>
                             </Select>
+                        </div>
+                    </div>
+
+                    {/* Info Banner */}
+                    <div className="flex items-start gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                        <span className="text-lg">🎯</span>
+                        <div className="text-[12px] text-zinc-500 leading-relaxed">
+                            <strong className="text-zinc-400">TYT/AYT seviyesinde</strong> sorular üretilir. Yanlış şıklar, öğrencilerin sık yaptığı hatalardan türetilir. Her soru <strong className="text-zinc-400">Türkçe + İngilizce</strong> olarak otomatik oluşturulur.
                         </div>
                     </div>
 
