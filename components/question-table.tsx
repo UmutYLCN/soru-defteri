@@ -194,7 +194,7 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
 
     return (
         <div
-            className="group relative p-6 rounded-[28px] border border-white/[0.05] bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/[0.1] transition-all duration-500 shadow-xl hover:shadow-black/40"
+            className="group relative p-6 rounded-[28px] border border-white/[0.05] bg-[#0c0c0e] hover:bg-[#111113] transition-all duration-500 shadow-xl hover:shadow-black/60"
             style={{ zIndex: showVariantPopover ? 50 : 1 }}
         >
             {/* Subtle Gradient Accent */}
@@ -394,7 +394,7 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
     const displayStem = language === 'en' && stemTextEN ? stemTextEN : stemText
 
     return (
-        <div className="rounded-[40px] border border-orange-500/20 bg-zinc-950/40 shadow-2xl overflow-hidden relative group">
+        <div className="rounded-[40px] border border-orange-500/20 bg-[#080809] shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] via-transparent to-transparent pointer-events-none" />
 
             {/* Group Header */}
@@ -586,7 +586,7 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
                 <input
                     type="text"
                     placeholder="Sorularda veya kategorilerde ara..."
-                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-5 py-3 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
+                    className="w-full bg-[#0c0c0e] border border-zinc-800 rounded-xl px-5 py-4 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all shadow-lg"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
