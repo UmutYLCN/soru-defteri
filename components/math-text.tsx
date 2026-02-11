@@ -11,13 +11,28 @@ interface MathTextProps {
 export function MathText({ text, className }: MathTextProps) {
     if (!text) return null
 
-    // Split text by $$...$$ first, then by $...$
-    // This is a simple parser for demo purposes. 
-    // For more complex cases, a library like markdown-it-katex is better.
+    // Pre-process: normalize text
+    let processedText = text.replace(/\\\$/g, '$')
+    // Convert literal \n to actual newlines
+    processedText = processedText.replace(/\\n/g, '\n')
 
-    const normalizedText = text.replace(/\\\$/g, '$')
+    // If the text has no $ delimiters at all but contains LaTeX commands, wrap them
+    if (!processedText.includes('$') && !processedText.includes('\\(') && !processedText.includes('\\[')) {
+        const latexPattern = /\\(?:frac|sqrt|sum|prod|int|lim|vec|hat|bar|dot|ddot|overline|underline|mathbf|mathrm|text|left|right|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|sim|propto|infty|partial|nabla|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega)\b/
+        if (latexPattern.test(processedText)) {
+            // Wrap contiguous LaTeX segments (commands + braces + operators)
+            processedText = processedText.replace(
+                /((?:\\[a-zA-Z]+(?:\{[^}]*\})*(?:\s*[_^]\s*(?:\{[^}]*\}|[a-zA-Z0-9]))*(?:\s*(?:[_^]\s*(?:\{[^}]*\}|[a-zA-Z0-9])|\\[a-zA-Z]+(?:\{[^}]*\})*|[+\-*/=<>]|\{[^}]*\}))*)+)/g,
+                (match) => {
+                    if (match.includes('STEP_START') || match.includes('STEP_END')) return match
+                    return `$${match.trim()}$`
+                }
+            )
+        }
+    }
+
     // Match $$...$$, $...$, \[...\], or \(...\)
-    const parts = normalizedText.split(/(\$\$[\s\S]*?\$\$|\$.*?\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\))/g)
+    const parts = processedText.split(/(\$\$[\s\S]*?\$\$|\$.*?\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\))/g)
 
     return (
         <span className={className}>
@@ -31,7 +46,14 @@ export function MathText({ text, className }: MathTextProps) {
                     const math = part.startsWith('$') ? part.slice(1, -1) : part.slice(2, -2)
                     return <InlineMath key={index} math={math} />
                 }
-                return <span key={index}>{part}</span>
+                // Split plain text by newlines and insert <br/> for line breaks
+                const lines = part.split('\n')
+                return <span key={index}>{lines.map((line, li) => (
+                    <React.Fragment key={li}>
+                        {li > 0 && <br />}
+                        {line}
+                    </React.Fragment>
+                ))}</span>
             })}
         </span>
     )

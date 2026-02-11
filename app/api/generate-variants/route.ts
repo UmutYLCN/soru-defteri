@@ -3,9 +3,17 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateVariants } from '@/lib/gemini'
+import { createClient } from '@/lib/supabase-server'
 
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { questionId, count } = await request.json()
 
         if (!questionId || !count) {
@@ -24,6 +32,11 @@ export async function POST(request: Request) {
 
         if (!originalQuestion) {
             return NextResponse.json({ error: 'Question not found' }, { status: 404 })
+        }
+
+        // Verify ownership
+        if (originalQuestion.userId !== user.id) {
+            return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
         }
 
         // Generate variants using Gemini
@@ -48,6 +61,7 @@ export async function POST(request: Request) {
             variants.map((variant: any) =>
                 prisma.question.create({
                     data: {
+                        userId: user.id,
                         questionText: variant.questionText,
                         optionA: variant.optionA,
                         optionB: variant.optionB,

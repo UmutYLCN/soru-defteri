@@ -1,12 +1,20 @@
-export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // Allow longer processing for vision
-
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateGroupedQuestions } from '@/lib/gemini'
+import { createClient } from '@/lib/supabase-server'
+
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         console.log('API Request: /api/generate-grouped');
         const { prompt, subQuestionCount, categoryId, image, originalImage } = await request.json()
 
@@ -35,6 +43,7 @@ export async function POST(request: Request) {
             result.questions.map((q: any) =>
                 prisma.question.create({
                     data: {
+                        userId: user.id,
                         questionText: q.questionText,
                         optionA: q.optionA,
                         optionB: q.optionB,

@@ -45,17 +45,32 @@ function SolutionContent({ question, language }: { question: Question; language:
         return (
             <div className="space-y-5">
                 {solutionText.split('STEP_START').filter(Boolean).map((section, i) => {
-                    const [title, ...contentParts] = section.split('STEP_END');
-                    const content = contentParts.join('STEP_END');
+                    const stepEndParts = section.split('STEP_END');
+
+                    // If there's no STEP_END, the whole section is content (not title)
+                    if (stepEndParts.length === 1) {
+                        return (
+                            <div key={i} className="text-zinc-300 leading-relaxed text-sm">
+                                <MathText text={stepEndParts[0].trim()} />
+                            </div>
+                        );
+                    }
+
+                    const title = stepEndParts[0];
+                    const content = stepEndParts.slice(1).join('STEP_END');
+
+                    // Check if the title looks like an actual step label (short, no LaTeX)
+                    const isStepLabel = title.trim().length < 60 && !title.includes('\\frac') && !title.includes('$$');
+
                     return (
                         <div key={i} className="flex flex-col gap-1.5">
-                            {title && (
-                                <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1.5 opacity-80">
+                            {isStepLabel && title.trim() && (
+                                <span className="text-[11px] font-black text-emerald-500 tracking-tighter flex items-center gap-1.5 opacity-80">
                                     {title.trim()}
                                 </span>
                             )}
                             <div className="text-zinc-300 leading-relaxed text-sm">
-                                <MathText text={content.trim()} />
+                                <MathText text={isStepLabel ? content.trim() : section.replace(/STEP_END/g, '').trim()} />
                             </div>
                         </div>
                     );
@@ -69,7 +84,7 @@ function SolutionContent({ question, language }: { question: Question; language:
                     if (part.match(/(\d+\.\s*Adım:?|Adım\s*\d+:?|Step\s*\d+:?)/i)) {
                         return (
                             <div key={i} className="flex flex-col gap-1">
-                                <span className="text-[11px] font-black text-emerald-500 uppercase tracking-tighter opacity-80">
+                                <span className="text-[11px] font-black text-emerald-500 tracking-tighter opacity-80">
                                     {part.trim().replace(/:$/, '')}
                                 </span>
                                 <div className="text-zinc-300 leading-relaxed text-sm pl-0">
@@ -179,59 +194,22 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
 
     return (
         <div className={`p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-all duration-300 shadow-sm hover:shadow-md`}>
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="text-zinc-500 font-bold text-lg">#{index + 1}</span>
-                        {question.category && (
-                            <span className="px-2 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs">
-                                {question.category.name}
-                            </span>
-                        )}
-                    </div>
-
-                    <MathText
-                        text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
-                        className="text-white font-medium mb-4 leading-relaxed block text-lg"
-                    />
-
-                    {question.imageUrl && (
-                        <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
-                            <img
-                                src={question.imageUrl}
-                                alt="Question Diagram"
-                                className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
-                            />
-                        </div>
-                    )}
-
-                    <OptionsGrid question={question} language={language} />
-
-                    {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
-                        <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                            <button
-                                onClick={() => setIsExpanded(!isExpanded)}
-                                className={`flex items-center gap-2 text-sm font-semibold transition-all group ${isExpanded ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-500'}`}
-                            >
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                {isExpanded ? (language === 'en' ? 'Hide Solution' : 'Çözümü Gizle') : (language === 'en' ? 'Show Solution' : 'Çözümü Göster')}
-                            </button>
-
-                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'mt-4 opacity-100 max-h-[500px]' : 'max-h-0 opacity-0'}`}>
-                                <div className="p-4 rounded-xl bg-emerald-500/5 border border-zinc-800/50">
-                                    <SolutionContent question={question} language={language} />
-                                </div>
-                            </div>
-                        </div>
+            {/* Header row: number + category on left, action buttons on right */}
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    <span className="text-zinc-500 font-bold text-lg">#{index + 1}</span>
+                    {question.category && (
+                        <span className="px-2 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs">
+                            {question.category.name}
+                        </span>
                     )}
                 </div>
-
-                <div className="flex flex-col gap-2" ref={variantRef}>
+                <div className="flex items-center gap-1" ref={variantRef}>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(question)}
-                        className="text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 shrink-0 h-9 w-9 rounded-xl transition-all"
+                        className="text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 shrink-0 h-8 w-8 rounded-xl transition-all"
                         title="Düzenle"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -242,7 +220,7 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowVariantPopover(!showVariantPopover)}
-                            className={`shrink-0 h-9 w-9 rounded-xl transition-all ${showVariantPopover || generatingVariants
+                            className={`shrink-0 h-8 w-8 rounded-xl transition-all ${showVariantPopover || generatingVariants
                                 ? 'text-orange-500 bg-orange-500/10'
                                 : 'text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10'
                                 }`}
@@ -324,6 +302,42 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                     </div>
                 </div>
             </div>
+
+            {/* Question content */}
+            <MathText
+                text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
+                className="text-white font-medium mb-4 leading-relaxed block text-lg"
+            />
+
+            {question.imageUrl && (
+                <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
+                    <img
+                        src={question.imageUrl}
+                        alt="Question Diagram"
+                        className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                </div>
+            )}
+
+            <OptionsGrid question={question} language={language} />
+
+            {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
+                <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`flex items-center gap-2 text-sm font-semibold transition-all group ${isExpanded ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-500'}`}
+                    >
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                        {isExpanded ? (language === 'en' ? 'Hide Solution' : 'Çözümü Gizle') : (language === 'en' ? 'Show Solution' : 'Çözümü Göster')}
+                    </button>
+
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'mt-4 opacity-100 max-h-[500px]' : 'max-h-0 opacity-0'}`}>
+                        <div className="p-4 rounded-xl bg-emerald-500/5 border border-zinc-800/50">
+                            <SolutionContent question={question} language={language} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     )
 }
@@ -339,9 +353,10 @@ interface GroupedQuestionCardProps {
     onEdit: (question: Question) => void
     onDelete: (id: number) => void
     language: 'tr' | 'en'
+    categories?: { id: number; name: string; parentId?: number | null }[]
 }
 
-function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, questions, startIndex, onEdit, onDelete, language }: GroupedQuestionCardProps) {
+function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, questions, startIndex, onEdit, onDelete, language, categories = [] }: GroupedQuestionCardProps) {
     const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set())
 
     const toggleSolution = (id: number) => {
@@ -356,23 +371,29 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
     const displayStem = language === 'en' && stemTextEN ? stemTextEN : stemText
 
     return (
-        <div className="rounded-2xl border-2 border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-zinc-900/80 to-zinc-900/80 shadow-lg shadow-violet-500/5 overflow-hidden">
+        <div className="rounded-2xl border-2 border-orange-500/30 bg-gradient-to-br from-orange-500/5 via-zinc-900/80 to-zinc-900/80 shadow-lg shadow-orange-500/5 overflow-hidden">
             {/* Group Header */}
-            <div className="px-6 py-4 bg-violet-500/10 border-b border-violet-500/20 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <Layers className="w-4 h-4 text-violet-400" />
+            <div className="px-6 py-4 bg-orange-500/10 border-b border-orange-500/20 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <Layers className="w-4 h-4 text-orange-400" />
                 </div>
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-violet-400 font-bold text-sm">
+                        <span className="text-orange-400 font-bold text-sm">
                             Bütünleşik Soru {startIndex + 1}–{startIndex + questions.length}
                         </span>
-                        <span className="px-2 py-0.5 bg-violet-500/20 text-violet-300 rounded-full text-[10px] font-bold">
+                        <span className="px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded-full text-[10px] font-bold">
                             {questions.length} alt soru
                         </span>
                     </div>
                     {questions[0]?.category && (
-                        <span className="text-zinc-500 text-xs">{questions[0].category.name}</span>
+                        <span className="text-zinc-500 text-xs">
+                            {(() => {
+                                const cat = questions[0].category!;
+                                const parentCat = categories.find(c => c.id === (categories.find(child => child.id === cat.id)?.parentId));
+                                return parentCat ? `${parentCat.name} › ${cat.name}` : cat.name;
+                            })()}
+                        </span>
                     )}
                 </div>
             </div>
@@ -380,7 +401,7 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
             {/* Shared Stem/Scenario */}
             <div className="px-6 py-5 border-b border-zinc-800/50">
                 <div className="flex items-start gap-3">
-                    <div className="w-1 self-stretch bg-violet-500/40 rounded-full shrink-0 mt-1" />
+                    <div className="w-1 self-stretch bg-orange-500/40 rounded-full shrink-0 mt-1" />
                     <MathText
                         text={displayStem}
                         className="text-zinc-200 leading-relaxed block text-[15px]"
@@ -407,7 +428,7 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
                                 <div className="flex-1 min-w-0">
                                     {/* Sub-question number + text */}
                                     <div className="flex items-start gap-3 mb-3">
-                                        <span className="w-7 h-7 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                                        <span className="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                                             {subIdx + 1}
                                         </span>
                                         <MathText
@@ -464,9 +485,10 @@ interface QuestionTableProps {
     onDelete: () => void
     onVariantsGenerated: () => void
     language: 'tr' | 'en'
+    categories?: { id: number; name: string; parentId?: number | null }[]
 }
 
-export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated, language }: QuestionTableProps) {
+export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated, language, categories = [] }: QuestionTableProps) {
     const [search, setSearch] = useState('')
 
     const filtered = questions.filter(q =>
@@ -553,6 +575,7 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     language={language}
+                                    categories={categories}
                                 />
                             )
                         }

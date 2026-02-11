@@ -97,9 +97,14 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
     2. Check if the "correctAnswer" actually corresponds to the result.
     3. REMOVE ALL "INNER MONOLOGUE".
     4. Provide Step-by-step professional solution using STEP_START/STEP_END.
-    5. Ensure ALL mathematical expressions and symbols are wrapped in LaTeX delimiters:
-       - Use single dollar signs $...$ for inline math (e.g., $E=mc^2$).
-       - Use double dollar signs $$...$$ for block/formula math.
+    5. CRITICAL LaTeX formatting rules:
+       - Every single math expression, variable, number with units, or formula MUST be wrapped in dollar signs.
+       - Use $...$ for inline math. Example: "The force is $F = 5$ N" NOT "The force is \\vec{F} = 5 N"
+       - Use $$...$$ for standalone formulas. Example: "$$F = \\frac{kq_1q_2}{r^2}$$"
+       - NEVER use LaTeX commands like \\frac, \\vec, \\sqrt outside of $ delimiters.
+       - Plain text should remain plain, only math/formulas/variables go inside $.
+       - Example correct: "Net kuvvet $\\vec{F}_{net}$ hesaplanır: $$F_{net} = \\frac{kq_1 q_2}{r^2} = 2.5$ N"
+       - Example WRONG: "Net kuvvet \\vec{F}_{net} hesaplanır: \\frac{kq_1 q_2}{r^2} = 2.5 N"
     Return corrected question data in same JSON format.`;
 
     const response = await openai.chat.completions.create({
@@ -112,12 +117,36 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
 
     const fixMath = (text: string | null) => {
       if (!text) return text;
-      // If it contains common LaTeX markers but no delimiters, wrap it
-      if (!text.includes('$') && !text.includes('\\(') && !text.includes('\\[')) {
-        if (/\\frac|\\sqrt|\\sum|\\pi|\\epsilon|\\alpha|\\beta|\\gamma|\\delta|\\omega|\\phi|\\psi|\\theta|\\tau|\\vec|\\hat|\\bar|[_^]/.test(text)) {
-          return `$${text}$`;
-        }
+
+      // If the text already has proper $ delimiters, leave it alone
+      if (text.includes('$')) return text;
+
+      // Common LaTeX command pattern (e.g. \frac{a}{b}, \vec{F}, \sqrt{x}, etc.)
+      const latexCommandPattern = /\\(?:frac|sqrt|sum|prod|int|lim|vec|hat|bar|dot|ddot|overline|underline|widetilde|mathbf|mathrm|text|left|right|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|sim|propto|infty|partial|nabla|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega)\b/;
+
+      // If the text contains LaTeX commands without $ delimiters, we need to wrap them
+      if (latexCommandPattern.test(text)) {
+        // Strategy: find contiguous LaTeX expressions and wrap each in $...$
+        // A LaTeX expression starts with \ and may include {}, ^, _, etc.
+        const result = text.replace(
+          /((?:\\[a-zA-Z]+(?:\{[^}]*\})*(?:\s*[_^]\s*(?:\{[^}]*\}|[a-zA-Z0-9]))*(?:\s*(?:[_^]\s*(?:\{[^}]*\}|[a-zA-Z0-9])|\\[a-zA-Z]+(?:\{[^}]*\})*|[+\-*/=<>]|\{[^}]*\}))*)+)/g,
+          (match) => {
+            // Don't wrap if it's already inside $ or is a STEP marker
+            if (match.includes('STEP_START') || match.includes('STEP_END')) return match;
+            return `$${match.trim()}$`;
+          }
+        );
+        return result;
       }
+
+      // Also handle standalone superscript/subscript patterns like "R_1", "x^2"
+      if (/[a-zA-Z][_^]\{?[^}\s]+\}?/.test(text) && !text.includes('$')) {
+        return text.replace(
+          /([a-zA-Z](?:[_^](?:\{[^}]+\}|[a-zA-Z0-9]))+)/g,
+          (match) => `$${match}$`
+        );
+      }
+
       return text;
     };
 

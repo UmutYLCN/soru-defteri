@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+import { createClient } from '@/lib/supabase-server'
+
 export async function GET() {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const questions = await prisma.question.findMany({
+            where: {
+                userId: user.id
+            },
             include: {
                 category: true,
                 group: true
@@ -19,6 +31,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const body = await request.json()
         const { categoryId, questionText, optionA, optionB, optionC, optionD, correctAnswer, solution } = body
 
@@ -33,6 +52,7 @@ export async function POST(request: Request) {
 
         const question = await prisma.question.create({
             data: {
+                userId: user.id,
                 categoryId: categoryId ? parseInt(String(categoryId)) : null,
                 questionText: String(questionText).trim(),
                 optionA: String(optionA).trim(),
@@ -56,6 +76,13 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 
@@ -66,6 +93,15 @@ export async function DELETE(request: Request) {
         const questionId = parseInt(id)
         if (isNaN(questionId)) {
             return NextResponse.json({ error: 'Invalid Question ID' }, { status: 400 })
+        }
+
+        // Verify ownership
+        const question = await prisma.question.findUnique({
+            where: { id: questionId }
+        })
+
+        if (!question || question.userId !== user.id) {
+            return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
         }
 
         await prisma.question.delete({
@@ -81,6 +117,13 @@ export async function DELETE(request: Request) {
 
 export async function PUT(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const body = await request.json()
         const { id, categoryId, questionText, optionA, optionB, optionC, optionD, correctAnswer, solution } = body
 
@@ -100,6 +143,15 @@ export async function PUT(request: Request) {
         const questionId = parseInt(id)
         if (isNaN(questionId)) {
             return NextResponse.json({ error: 'Invalid Question ID' }, { status: 400 })
+        }
+
+        // Verify ownership
+        const existingQuestion = await prisma.question.findUnique({
+            where: { id: questionId }
+        })
+
+        if (!existingQuestion || existingQuestion.userId !== user.id) {
+            return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
         }
 
         const question = await prisma.question.update({

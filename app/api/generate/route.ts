@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server'
 import { generate } from '@/lib/gemini'
 import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         console.log('API Request: /api/generate');
         const { prompt, count, questionType, categoryId, image, originalImage } = await req.json()
 
@@ -21,6 +29,7 @@ export async function POST(req: Request) {
             generatedQuestions.map((q: any) =>
                 prisma.question.create({
                     data: {
+                        userId: user.id,
                         questionText: q.questionText,
                         optionA: q.optionA,
                         optionB: q.optionB,

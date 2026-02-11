@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase-server'
 
 interface CSVRow {
     category: string
@@ -73,6 +74,13 @@ function parseCSVLine(line: string): string[] {
 
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const formData = await request.formData()
         const file = formData.get('file') as File
 
@@ -124,6 +132,7 @@ export async function POST(request: Request) {
             try {
                 await prisma.question.create({
                     data: {
+                        userId: user.id,
                         categoryId: row.category ? categoryMap[row.category] : null,
                         questionText: row.question_text,
                         optionA: row.option_a,
