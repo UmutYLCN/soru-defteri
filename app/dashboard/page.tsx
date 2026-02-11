@@ -387,7 +387,7 @@ export default function Dashboard() {
                           value={selectedCat?.parentId ? selectedCategory : "all"}
                           onValueChange={(value) => setSelectedCategory(value === "all" ? activeParentId.toString() : value)}
                         >
-                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all h-full rounded-xl px-4">
+                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-black text-[11px] uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all !h-12 rounded-xl px-4">
                             <div className="flex items-center gap-2 whitespace-nowrap">
                               <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                               <SelectValue placeholder="Alt Kategori" />
@@ -405,7 +405,7 @@ export default function Dashboard() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <div className="w-px h-5 bg-white/[0.05] mx-1" />
+                        <div className="w-px h-6 bg-white/20 mx-2" />
                       </motion.div>
                     );
                   }
@@ -420,7 +420,7 @@ export default function Dashboard() {
                 })()}
                 onValueChange={(value) => setSelectedCategory(value)}
               >
-                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all h-full rounded-xl px-4">
+                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-black text-[11px] uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all !h-12 rounded-xl px-4">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                     <SelectValue placeholder="KATEGORİ" />
