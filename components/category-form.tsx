@@ -83,22 +83,24 @@ export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
                     <FolderPlus size={18} />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[420px] bg-zinc-950/90 border-white/10 backdrop-blur-2xl rounded-[32px] p-0 overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]">
-                {/* Premium Background Accent */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500/0 via-orange-500/50 to-orange-500/0" />
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-500/10 blur-[80px] rounded-full pointer-events-none" />
+            <DialogContent className="sm:max-w-[480px] bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl rounded-[32px] p-0 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)]">
+                {/* Radiant Header */}
+                <div className="relative overflow-hidden px-8 py-8 border-b border-white/[0.05]">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/10 blur-[60px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col gap-1">
+                        <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+                            <div className="w-10 h-10 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/20 shadow-lg shadow-orange-500/5">
+                                <FolderPlus className="w-5 h-5 text-orange-500" />
+                            </div>
+                            Kategori <span className="text-orange-500 ml-1">Yönetimi</span>
+                        </DialogTitle>
+                        <p className="text-zinc-500 text-xs font-medium mt-1 ml-13">
+                            Yeni konular ekleyerek soru bankanızı organize edin.
+                        </p>
+                    </div>
+                </div>
 
                 <div className="p-8">
-                    <DialogHeader className="mb-8">
-                        <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 mb-4 border border-orange-500/20">
-                            <FolderPlus size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-black text-white tracking-tight">
-                            Yeni Kategori <span className="text-orange-500">Oluştur</span>
-                        </DialogTitle>
-                        <p className="text-zinc-500 text-sm font-medium">Soru bankanızı daha düzenli hale getirmek için yeni bir başlık ekleyin.</p>
-                    </DialogHeader>
-
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-3">
                             <Label htmlFor="categoryName" className="text-[11px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kategori / Konu Adı</Label>
@@ -164,3 +166,4 @@ export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
         </Dialog>
     )
 }
+

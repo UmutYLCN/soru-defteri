@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,7 +38,7 @@ interface QuestionFormProps {
 export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [formData, setFormData] = useState({
+    const initialFormData = {
         categoryId: '',
         questionText: '',
         optionA: '',
@@ -46,7 +47,15 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
         optionD: '',
         correctAnswer: '',
         solution: ''
-    })
+    }
+
+    const [formData, setFormData] = useState(initialFormData)
+
+    useEffect(() => {
+        if (open) {
+            setFormData(initialFormData)
+        }
+    }, [open])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -63,16 +72,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
             })
 
             if (res.ok) {
-                setFormData({
-                    categoryId: '',
-                    questionText: '',
-                    optionA: '',
-                    optionB: '',
-                    optionC: '',
-                    optionD: '',
-                    correctAnswer: '',
-                    solution: ''
-                })
+                setFormData(initialFormData)
                 setOpen(false)
                 onSuccess()
             }
@@ -86,169 +86,253 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-2.5 rounded-xl shadow-lg shadow-orange-900/20 hover:shadow-orange-500/30 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95">
-                    <Plus className="w-5 h-5 stroke-[3px]" />
-                    <span>Yeni Soru</span>
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black px-7 py-2.5 rounded-xl shadow-xl shadow-orange-950/20 hover:shadow-orange-500/30 transition-all duration-500 flex items-center gap-2.5 border-0 active:scale-95 group">
+                    <Plus className="w-5 h-5 stroke-[3px] transition-transform duration-500 group-hover:rotate-90" />
+                    <span className="tracking-tight">Yeni Soru Ekle</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">Yeni Soru Ekle</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="category" className="text-zinc-300">Kategori</Label>
-                        <Select
-                            value={formData.categoryId}
-                            onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                            required
-                        >
-                            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                                <SelectValue placeholder="Bir kategori seçin *" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-zinc-800 border-zinc-700">
-                                {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
-                                    <Fragment key={parent.id}>
-                                        <SelectItem value={parent.id.toString()} className="text-white font-bold bg-zinc-800/50">
-                                            {parent.name}
-                                        </SelectItem>
-                                        {categories.filter(c => c.parentId === parent.id).map(child => (
-                                            <SelectItem key={child.id} value={child.id.toString()} className="text-zinc-300 pl-6 hover:bg-zinc-700">
-                                                ㄴ {child.name}
-                                            </SelectItem>
-                                        ))}
-                                    </Fragment>
-                                ))}
-                                {(!Array.isArray(categories) || (categories.filter(c => !c.parentId && !categories.some(child => child.parentId === c.id)).length === 0 &&
-                                    categories.filter(c => !c.parentId).length === 0)) && (
-                                        <div className="p-2 text-sm text-zinc-500 text-center">Önce kategori oluşturun</div>
-                                    )}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="questionText" className="text-zinc-300">Soru Metni *</Label>
-                        <Textarea
-                            id="questionText"
-                            value={formData.questionText}
-                            onChange={(e) => setFormData({ ...formData, questionText: e.target.value })}
-                            placeholder="Sorunuzu yazın..."
-                            className="bg-zinc-800 border-zinc-700 text-white min-h-[80px]"
-                            required
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="optionA" className="text-zinc-300">A Şıkkı *</Label>
-                            <Input
-                                id="optionA"
-                                value={formData.optionA}
-                                onChange={(e) => setFormData({ ...formData, optionA: e.target.value })}
-                                className="bg-zinc-800 border-zinc-700 text-white"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="optionB" className="text-zinc-300">B Şıkkı *</Label>
-                            <Input
-                                id="optionB"
-                                value={formData.optionB}
-                                onChange={(e) => setFormData({ ...formData, optionB: e.target.value })}
-                                className="bg-zinc-800 border-zinc-700 text-white"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="optionC" className="text-zinc-300">C Şıkkı *</Label>
-                            <Input
-                                id="optionC"
-                                value={formData.optionC}
-                                onChange={(e) => setFormData({ ...formData, optionC: e.target.value })}
-                                className="bg-zinc-800 border-zinc-700 text-white"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="optionD" className="text-zinc-300">D Şıkkı *</Label>
-                            <Input
-                                id="optionD"
-                                value={formData.optionD}
-                                onChange={(e) => setFormData({ ...formData, optionD: e.target.value })}
-                                className="bg-zinc-800 border-zinc-700 text-white"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="correctAnswer" className="text-zinc-300">Doğru Cevap *</Label>
-                        <Select
-                            value={formData.correctAnswer}
-                            onValueChange={(value) => setFormData({ ...formData, correctAnswer: value })}
-                            required
-                        >
-                            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                                <SelectValue placeholder="Doğru cevabı seçin" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-zinc-800 border-zinc-700">
-                                <SelectItem value="A" className="text-white hover:bg-zinc-700">A</SelectItem>
-                                <SelectItem value="B" className="text-white hover:bg-zinc-700">B</SelectItem>
-                                <SelectItem value="C" className="text-white hover:bg-zinc-700">C</SelectItem>
-                                <SelectItem value="D" className="text-white hover:bg-zinc-700">D</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="solution" className="text-zinc-300">Cevap Çözümü (Opsiyonel)</Label>
-                        <Textarea
-                            id="solution"
-                            value={formData.solution}
-                            onChange={(e) => setFormData({ ...formData, solution: e.target.value })}
-                            placeholder="Soru çözümünü buraya yazabilirsiniz..."
-                            className="bg-zinc-800 border-zinc-700 text-white min-h-[80px]"
-                        />
-                    </div>
-
-                    {/* Live Preview */}
-                    {(formData.questionText || formData.optionA || formData.optionB || formData.optionC || formData.optionD) && (
-                        <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/50 space-y-3">
-                            <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Canlı Önizleme</Label>
-                            {formData.questionText && (
-                                <MathText text={formData.questionText} className="text-white block" />
-                            )}
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                {formData.optionA && <div className="text-zinc-400">A) <MathText text={formData.optionA} /></div>}
-                                {formData.optionB && <div className="text-zinc-400">B) <MathText text={formData.optionB} /></div>}
-                                {formData.optionC && <div className="text-zinc-400">C) <MathText text={formData.optionC} /></div>}
-                                {formData.optionD && <div className="text-zinc-400">D) <MathText text={formData.optionD} /></div>}
+            <DialogContent className="sm:max-w-[680px] max-h-[92vh] overflow-y-auto bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white p-0 shadow-[0_0_100px_rgba(0,0,0,0.9)] rounded-[32px] custom-scrollbar">
+                {/* Radiant Header */}
+                <div className="relative overflow-hidden px-8 py-8 border-b border-white/[0.05]">
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-orange-500/10 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col gap-1">
+                        <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+                            <div className="w-10 h-10 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/20 shadow-lg shadow-orange-500/5">
+                                <Plus className="w-6 h-6 text-orange-500" />
                             </div>
-                            {formData.solution && (
-                                <div className="mt-2 pt-2 border-t border-zinc-800">
-                                    <Label className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Çözüm Önizleme</Label>
-                                    <MathText text={formData.solution} className="text-zinc-300 text-sm block mt-1" />
+                            Yeni Soru Kaydı
+                        </DialogTitle>
+                        <p className="text-zinc-500 text-sm font-medium mt-1 ml-13">
+                            Veritabanına manuel olarak yeni bir soru ekleyin ve biçimlendirin.
+                        </p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-8 space-y-8 relative z-10">
+                    <div className="grid grid-cols-1 gap-8">
+                        {/* Category Selection */}
+                        <div className="space-y-3">
+                            <Label htmlFor="category" className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Hedef Kategori *
+                            </Label>
+
+                            <div className="flex flex-wrap items-center gap-4">
+                                {/* Parent Category Select */}
+                                <div className="w-full sm:w-[240px]">
+                                    <Select
+                                        value={categories.find(c => c.id.toString() === formData.categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === formData.categoryId && !c.parentId) ? formData.categoryId : "")}
+                                        onValueChange={(value) => {
+                                            setFormData({ ...formData, categoryId: value });
+                                        }}
+                                        required
+                                    >
+                                        <SelectTrigger className="bg-white/[0.02] border-white/[0.08] text-zinc-200 h-14 rounded-2xl px-5 transition-all hover:bg-white/[0.04] focus:ring-orange-500/20 w-full">
+                                            <SelectValue placeholder="Ana Kategori Seçin *" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[24px] max-h-[300px] custom-scrollbar">
+                                            {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
+                                                <SelectItem key={parent.id} value={parent.id.toString()} className="text-orange-500 font-extrabold focus:bg-orange-500/10 focus:text-orange-500 mt-1 py-3">
+                                                    {parent.name}
+                                                </SelectItem>
+                                            ))}
+                                            {(!Array.isArray(categories) || categories.filter(c => !c.parentId).length === 0) && (
+                                                <div className="p-4 text-xs text-zinc-600 text-center font-bold">Önce kategori oluşturun</div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            )}
+
+                                {/* Child Category Select (Animated with Framer Motion) */}
+                                <AnimatePresence>
+                                    {(() => {
+                                        const selectedParentId = categories.find(c => c.id.toString() === formData.categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === formData.categoryId && !c.parentId) ? formData.categoryId : null);
+                                        const children = categories.filter(c => c.parentId?.toString() === selectedParentId);
+
+                                        if (selectedParentId && children.length > 0) {
+                                            return (
+                                                <motion.div
+                                                    initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                                                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                                                    transition={{ duration: 0.4, ease: "easeOut" }}
+                                                    className="w-full sm:w-[240px]"
+                                                >
+                                                    <Select
+                                                        value={categories.find(c => c.id.toString() === formData.categoryId && c.parentId)?.id.toString() || ""}
+                                                        onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                                                    >
+                                                        <SelectTrigger className="bg-white/[0.02] border-white/[0.08] text-zinc-200 h-14 rounded-2xl px-5 transition-all hover:bg-white/[0.04] focus:ring-orange-500/20 border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.05)] w-full">
+                                                            <SelectValue placeholder="Alt Kategori Seçin" />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[24px] max-h-[300px] custom-scrollbar">
+                                                            {children.map(child => (
+                                                                <SelectItem key={child.id} value={child.id.toString()} className="text-zinc-400 focus:bg-white/5 focus:text-white transition-colors py-3">
+                                                                    {child.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </motion.div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </AnimatePresence>
+                            </div>
                         </div>
-                    )}
 
+                        {/* Question Text */}
+                        <div className="space-y-3">
+                            <Label htmlFor="questionText" className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Soru Metni *
+                            </Label>
+                            <Textarea
+                                id="questionText"
+                                value={formData.questionText}
+                                onChange={(e) => setFormData({ ...formData, questionText: e.target.value })}
+                                placeholder="Sorunuzu yazın (LaTeX desteklenir)..."
+                                className="bg-white/[0.02] border-white/[0.08] focus:border-orange-500/50 focus:ring-orange-500/20 min-h-[120px] resize-none text-zinc-200 placeholder:text-zinc-700 rounded-2xl text-base p-5 transition-all duration-300"
+                                required
+                            />
+                        </div>
 
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 rounded-xl shadow-lg shadow-orange-950/20 flex items-center justify-center gap-2 border-0"
-                    >
-                        {loading ? 'Kaydediliyor...' : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                <span>Kaydet</span>
-                            </>
+                        {/* Options Grid */}
+                        <div className="space-y-4">
+                            <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Seçenekler
+                            </Label>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { id: 'optionA', label: 'A Şıkkı', color: 'text-zinc-500' },
+                                    { id: 'optionB', label: 'B Şıkkı', color: 'text-zinc-500' },
+                                    { id: 'optionC', label: 'C Şıkkı', color: 'text-zinc-500' },
+                                    { id: 'optionD', label: 'D Şıkkı', color: 'text-zinc-500' }
+                                ].map((opt) => (
+                                    <div key={opt.id} className="space-y-2 group">
+                                        <div className="flex items-center justify-between px-1">
+                                            <Label htmlFor={opt.id} className={`text-[10px] font-black uppercase tracking-widest ${opt.color}`}>{opt.label}</Label>
+                                        </div>
+                                        <Input
+                                            id={opt.id}
+                                            value={(formData as any)[opt.id]}
+                                            onChange={(e) => setFormData({ ...formData, [opt.id]: e.target.value })}
+                                            className="bg-white/[0.02] border-white/[0.08] focus:border-orange-500/50 focus:ring-orange-500/20 h-12 rounded-xl px-4 transition-all"
+                                            required
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Correct Answer Selection */}
+                        <div className="space-y-3">
+                            <Label htmlFor="correctAnswer" className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                Doğru Cevap *
+                            </Label>
+                            <div className="flex p-1.5 bg-white/[0.03] rounded-2xl border border-white/[0.06] backdrop-blur-sm">
+                                {['A', 'B', 'C', 'D'].map((ans) => (
+                                    <button
+                                        key={ans}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, correctAnswer: ans })}
+                                        className={`flex-1 py-3 rounded-xl text-sm font-black transition-all duration-300 ${formData.correctAnswer === ans
+                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-[1.05]'
+                                            : 'text-zinc-500 hover:text-zinc-300'
+                                            }`}
+                                    >
+                                        {ans} Şıkkı
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Solution Text */}
+                        <div className="space-y-3">
+                            <Label htmlFor="solution" className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Çözüm Analizi (Opsiyonel)
+                            </Label>
+                            <Textarea
+                                id="solution"
+                                value={formData.solution}
+                                onChange={(e) => setFormData({ ...formData, solution: e.target.value })}
+                                placeholder="Soru çözüm adımlarını detaylandırın..."
+                                className="bg-white/[0.02] border-white/[0.08] focus:border-orange-500/50 focus:ring-orange-500/20 min-h-[100px] resize-none text-zinc-200 placeholder:text-zinc-700 rounded-2xl text-base p-5 transition-all duration-300"
+                            />
+                        </div>
+
+                        {/* Live Preview Card */}
+                        {(formData.questionText || formData.optionA || formData.optionB || formData.optionC || formData.optionD) && (
+                            <div className="relative group overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent rounded-[24px] pointer-events-none" />
+                                <div className="p-6 rounded-[24px] border border-white/[0.08] bg-white/[0.01] space-y-5 backdrop-blur-sm">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-orange-500 uppercase tracking-[0.2em]">
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Görünüm Önizleme
+                                        </div>
+                                        <div className="px-3 py-1 bg-white/[0.05] rounded-full text-[9px] font-black text-zinc-500 uppercase">Aktif Taslak</div>
+                                    </div>
+
+                                    {formData.questionText && (
+                                        <div className="text-white text-lg font-medium leading-relaxed">
+                                            <MathText text={formData.questionText} />
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 pt-2">
+                                        {formData.optionA && <div className="text-zinc-400 text-sm flex gap-2"><span className="text-orange-500 font-black">A)</span> <MathText text={formData.optionA} /></div>}
+                                        {formData.optionB && <div className="text-zinc-400 text-sm flex gap-2"><span className="text-orange-500 font-black">B)</span> <MathText text={formData.optionB} /></div>}
+                                        {formData.optionC && <div className="text-zinc-400 text-sm flex gap-2"><span className="text-orange-500 font-black">C)</span> <MathText text={formData.optionC} /></div>}
+                                        {formData.optionD && <div className="text-zinc-400 text-sm flex gap-2"><span className="text-orange-500 font-black">D)</span> <MathText text={formData.optionD} /></div>}
+                                    </div>
+
+                                    {formData.solution && (
+                                        <div className="mt-4 pt-4 border-t border-white/[0.05] space-y-2">
+                                            <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Çözüm Akışı</div>
+                                            <MathText text={formData.solution} className="text-zinc-400 text-sm block italic" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         )}
-                    </Button>
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setOpen(false)}
+                            className="flex-1 h-15 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
+                            disabled={loading}
+                        >
+                            İPTAL ET
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-black h-15 rounded-2xl shadow-2xl shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                    <span>KAYDEDİLİYOR...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                    <span>SORUYI ARŞİVLE</span>
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>
     )
+
 }

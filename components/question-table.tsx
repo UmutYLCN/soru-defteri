@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MathText } from './math-text'
-import { Trash2, Edit2, ChevronDown, Copy, Loader2, Check, X, Layers } from 'lucide-react'
+import { Trash2, Edit2, ChevronDown, Copy, Loader2, Check, X, Layers, Sparkles } from 'lucide-react'
 import { ConfirmDialog } from './confirm-dialog'
 
 
@@ -193,23 +193,31 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
     }
 
     return (
-        <div className={`p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-all duration-300 shadow-sm hover:shadow-md`}>
+        <div className="group relative p-6 rounded-[28px] border border-white/[0.05] bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/[0.1] transition-all duration-500 overflow-hidden shadow-xl hover:shadow-black/40">
+            {/* Subtle Gradient Accent */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
             {/* Header row: number + category on left, action buttons on right */}
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                    <span className="text-zinc-500 font-bold text-lg">#{index + 1}</span>
+            <div className="flex items-center justify-between mb-5 relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-zinc-950/50 border border-white/[0.05] shadow-inner">
+                        <span className="text-zinc-500 font-black text-xs">#{index + 1}</span>
+                    </div>
                     {question.category && (
-                        <span className="px-2 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs">
-                            {question.category.name}
-                        </span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/5 border border-orange-500/10 rounded-xl">
+                            <div className="w-1 h-1 rounded-full bg-orange-500" />
+                            <span className="text-orange-500 font-extrabold text-[10px] uppercase tracking-widest">
+                                {question.category.name}
+                            </span>
+                        </div>
                     )}
                 </div>
-                <div className="flex items-center gap-1" ref={variantRef}>
+                <div className="flex items-center gap-2" ref={variantRef}>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(question)}
-                        className="text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 shrink-0 h-8 w-8 rounded-xl transition-all"
+                        className="text-zinc-500 hover:text-white hover:bg-white/5 shrink-0 h-10 w-10 rounded-2xl transition-all duration-300"
                         title="Düzenle"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -220,9 +228,9 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowVariantPopover(!showVariantPopover)}
-                            className={`shrink-0 h-8 w-8 rounded-xl transition-all ${showVariantPopover || generatingVariants
-                                ? 'text-orange-500 bg-orange-500/10'
-                                : 'text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10'
+                            className={`shrink-0 h-10 w-10 rounded-2xl transition-all duration-300 ${showVariantPopover || generatingVariants
+                                ? 'text-orange-500 bg-orange-500/10 border border-orange-500/20'
+                                : 'text-zinc-500 hover:text-orange-500 hover:bg-orange-500/5'
                                 }`}
                             title="Benzer Soru Üret"
                             disabled={generatingVariants}
@@ -235,42 +243,46 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                         </Button>
 
                         {showVariantPopover && (
-                            <div className="absolute right-0 top-full mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="text-sm font-bold text-white">Benzer Soru Üret</h4>
+                            <div className="absolute right-0 top-full mt-3 w-72 bg-zinc-950/95 border border-white/[0.08] backdrop-blur-2xl rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-6 z-50 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-black text-white tracking-tight uppercase tracking-widest">Akıllı Varyant</h4>
                                     <button
                                         onClick={() => setShowVariantPopover(false)}
-                                        className="text-zinc-500 hover:text-white transition-colors"
+                                        className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
-                                <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
-                                    Bu soruya benzer, farklı sayılarla yeni sorular üretilir.
+                                <p className="text-[10px] text-zinc-500 mb-6 font-medium leading-relaxed">
+                                    Bu soruya benzer, farklı sayılarla akademik kalitede yeni varyasyonlar üretilir.
                                 </p>
 
                                 {variantResult === 'success' ? (
-                                    <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-                                        <Check className="w-4 h-4 text-emerald-500" />
-                                        <span className="text-emerald-400 text-sm font-semibold">Varyantlar oluşturuldu!</span>
+                                    <div className="flex items-center gap-3 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl animate-in zoom-in-95">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-emerald-500" />
+                                        </div>
+                                        <span className="text-emerald-400 text-xs font-black uppercase">Tamamlandı!</span>
                                     </div>
                                 ) : variantResult === 'error' ? (
-                                    <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-                                        <X className="w-4 h-4 text-red-500" />
-                                        <span className="text-red-400 text-sm font-semibold">Hata oluştu, tekrar deneyin.</span>
+                                    <div className="flex items-center gap-3 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl animate-in shake">
+                                        <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+                                            <X className="w-4 h-4 text-red-500" />
+                                        </div>
+                                        <span className="text-red-400 text-xs font-black uppercase">Hata Oluştu</span>
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="mb-4">
-                                            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider block mb-2">Adet (max 5)</label>
-                                            <div className="flex gap-1.5">
+                                        <div className="mb-6">
+                                            <label className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em] block mb-3 ml-1">Varyant Sayısı</label>
+                                            <div className="grid grid-cols-5 gap-2">
                                                 {[1, 2, 3, 4, 5].map(n => (
                                                     <button
                                                         key={n}
                                                         onClick={() => setVariantCount(n)}
-                                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${variantCount === n
-                                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                                        className={`h-9 rounded-xl text-xs font-black transition-all duration-300 ${variantCount === n
+                                                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-[1.1]'
+                                                            : 'bg-white/[0.03] text-zinc-500 hover:text-zinc-300'
                                                             }`}
                                                     >
                                                         {n}
@@ -281,17 +293,17 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                                         <Button
                                             onClick={handleGenerateVariants}
                                             disabled={generatingVariants}
-                                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-10 text-sm shadow-lg shadow-orange-500/20 transition-all active:scale-95"
+                                            className="w-full bg-white hover:bg-zinc-200 text-black font-black rounded-2xl h-12 text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 border-0"
                                         >
                                             {generatingVariants ? (
                                                 <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Üretiliyor...
+                                                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                                                    VARYANTLAR HAZIRLANIYOR...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Copy className="w-4 h-4 mr-2" />
-                                                    {variantCount} Varyant Üret
+                                                    <Sparkles className="w-4 h-4" />
+                                                    ŞİMDİ ÜRET
                                                 </>
                                             )}
                                         </Button>
@@ -304,43 +316,51 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
             </div>
 
             {/* Question content */}
-            <MathText
-                text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
-                className="text-white font-medium mb-4 leading-relaxed block text-lg"
-            />
-
-            {question.imageUrl && (
-                <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
-                    <img
-                        src={question.imageUrl}
-                        alt="Question Diagram"
-                        className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+            <div className="relative z-10">
+                <div className="text-white text-xl font-medium mb-6 leading-relaxed block">
+                    <MathText
+                        text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
                     />
                 </div>
-            )}
 
-            <OptionsGrid question={question} language={language} />
+                {question.imageUrl && (
+                    <div className="mb-8 rounded-[32px] overflow-hidden border border-white/[0.05] bg-black/40 p-2 group cursor-zoom-in relative">
+                        <img
+                            src={question.imageUrl}
+                            alt="Question Diagram"
+                            className="max-w-full h-auto mx-auto rounded-[24px] transition-transform duration-700 group-hover:scale-[1.03]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    </div>
+                )}
 
-            {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
-                <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                    <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className={`flex items-center gap-2 text-sm font-semibold transition-all group ${isExpanded ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-500'}`}
-                    >
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                        {isExpanded ? (language === 'en' ? 'Hide Solution' : 'Çözümü Gizle') : (language === 'en' ? 'Show Solution' : 'Çözümü Göster')}
-                    </button>
+                <OptionsGrid question={question} language={language} />
 
-                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'mt-4 opacity-100 max-h-[500px]' : 'max-h-0 opacity-0'}`}>
-                        <div className="p-4 rounded-xl bg-emerald-500/5 border border-zinc-800/50">
-                            <SolutionContent question={question} language={language} />
+                {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
+                    <div className="mt-6 pt-5 border-t border-white/[0.05]">
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className={`flex items-center gap-3 text-xs font-black uppercase tracking-widest transition-all group ${isExpanded ? 'text-emerald-500' : 'text-zinc-600 hover:text-emerald-500'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isExpanded ? 'bg-emerald-500/10' : 'bg-white/[0.03]'}`}>
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                            {isExpanded ? (language === 'en' ? 'Hide Step-by-Step' : 'Çözümü Gizle') : (language === 'en' ? 'Show Step-by-Step' : 'Çözüm Analizini Göster')}
+                        </button>
+
+                        <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'mt-6 opacity-100 max-h-[1000px]' : 'max-h-0 opacity-0'}`}>
+                            <div className="p-6 rounded-[32px] bg-emerald-500/[0.02] border border-emerald-500/10 backdrop-blur-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[60px] rounded-full pointer-events-none" />
+                                <SolutionContent question={question} language={language} />
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div >
     )
 }
+
 
 // ─── Grouped Question Card (Bütünleşik Soru) ─────────────
 interface GroupedQuestionCardProps {
@@ -371,86 +391,99 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
     const displayStem = language === 'en' && stemTextEN ? stemTextEN : stemText
 
     return (
-        <div className="rounded-2xl border-2 border-orange-500/30 bg-gradient-to-br from-orange-500/5 via-zinc-900/80 to-zinc-900/80 shadow-lg shadow-orange-500/5 overflow-hidden">
+        <div className="rounded-[40px] border border-orange-500/20 bg-zinc-950/40 shadow-2xl overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] via-transparent to-transparent pointer-events-none" />
+
             {/* Group Header */}
-            <div className="px-6 py-4 bg-orange-500/10 border-b border-orange-500/20 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                    <Layers className="w-4 h-4 text-orange-400" />
-                </div>
-                <div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-orange-400 font-bold text-sm">
-                            Bütünleşik Soru {startIndex + 1}–{startIndex + questions.length}
-                        </span>
-                        <span className="px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded-full text-[10px] font-bold">
-                            {questions.length} alt soru
-                        </span>
+            <div className="px-8 py-6 bg-orange-500/[0.03] border-b border-white/[0.05] flex items-center justify-between">
+                <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-[22px] bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shadow-lg shadow-orange-500/5">
+                        <Layers className="w-7 h-7 text-orange-500" />
                     </div>
-                    {questions[0]?.category && (
-                        <span className="text-zinc-500 text-xs">
-                            {(() => {
-                                const cat = questions[0].category!;
-                                const parentCat = categories.find(c => c.id === (categories.find(child => child.id === cat.id)?.parentId));
-                                return parentCat ? `${parentCat.name} › ${cat.name}` : cat.name;
-                            })()}
-                        </span>
-                    )}
+                    <div>
+                        <div className="flex items-center gap-3 mb-1">
+                            <span className="text-white font-black text-lg tracking-tight">
+                                Bütünleşik Soru Seti
+                            </span>
+                            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                {questions.length} Alt Soru
+                            </div>
+                        </div>
+                        {questions[0]?.category && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-zinc-500 text-xs font-bold uppercase tracking-tighter">
+                                    {startIndex + 1}–{startIndex + questions.length} . Bölüm
+                                </span>
+                                <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                                <span className="text-orange-500/70 text-xs font-black uppercase tracking-widest">
+                                    {(() => {
+                                        const cat = questions[0].category!;
+                                        const parentCat = categories.find(c => c.id === (categories.find(child => child.id === cat.id)?.parentId));
+                                        return parentCat ? `${parentCat.name} › ${cat.name}` : cat.name;
+                                    })()}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Shared Stem/Scenario */}
-            <div className="px-6 py-5 border-b border-zinc-800/50">
-                <div className="flex items-start gap-3">
-                    <div className="w-1 self-stretch bg-orange-500/40 rounded-full shrink-0 mt-1" />
-                    <MathText
-                        text={displayStem}
-                        className="text-zinc-200 leading-relaxed block text-[15px]"
-                    />
+            <div className="px-10 py-10 border-b border-white/[0.03] relative">
+                <div className="flex items-start gap-6">
+                    <div className="w-1.5 h-12 bg-gradient-to-b from-orange-500 to-transparent rounded-full shrink-0 opacity-50" />
+                    <div className="text-zinc-200 leading-relaxed block text-xl font-medium">
+                        <MathText text={displayStem} />
+                    </div>
                 </div>
                 {imageUrl && (
-                    <div className="mt-6 rounded-2xl overflow-hidden border border-zinc-800 bg-black/40 p-2 group cursor-zoom-in">
+                    <div className="mt-10 rounded-[32px] overflow-hidden border border-white/[0.05] bg-black/40 p-2 group cursor-zoom-in relative max-w-2xl mx-auto">
                         <img
                             src={imageUrl}
                             alt="Group Diagram"
-                            className="max-w-full h-auto mx-auto rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                            className="max-w-full h-auto mx-auto rounded-[24px] transition-transform duration-700 group-hover:scale-[1.02]"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     </div>
                 )}
             </div>
 
             {/* Sub-Questions */}
-            <div className="divide-y divide-zinc-800/50">
+            <div className="divide-y divide-white/[0.03]">
                 {questions.map((q, subIdx) => {
                     const isExpanded = expandedSolutions.has(q.id)
                     return (
-                        <div key={q.id} className="px-6 py-5 hover:bg-white/[0.02] transition-colors">
-                            <div className="flex items-start justify-between gap-4">
+                        <div key={q.id} className="px-10 py-10 hover:bg-white/[0.01] transition-all duration-500 group/sub">
+                            <div className="flex items-start justify-between gap-8">
                                 <div className="flex-1 min-w-0">
                                     {/* Sub-question number + text */}
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <span className="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                                    <div className="flex items-start gap-6 mb-6">
+                                        <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-white/[0.05] text-orange-500 flex items-center justify-center text-sm font-black shrink-0 shadow-inner group-hover/sub:border-orange-500/30 transition-colors">
                                             {subIdx + 1}
-                                        </span>
-                                        <MathText
-                                            text={language === 'en' && q.questionTextEN ? q.questionTextEN : q.questionText}
-                                            className="text-white font-medium leading-relaxed block"
-                                        />
+                                        </div>
+                                        <div className="text-white text-lg font-medium leading-relaxed pt-1.5">
+                                            <MathText
+                                                text={language === 'en' && q.questionTextEN ? q.questionTextEN : q.questionText}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="ml-10">
+                                    <div className="ml-16">
                                         <OptionsGrid question={q} language={language} />
 
                                         {(language === 'en' ? (q.solutionEN || q.solution) : q.solution) && (
-                                            <div className="mt-3 pt-3 border-t border-zinc-800/30">
+                                            <div className="mt-6 pt-5 border-t border-white/[0.03]">
                                                 <button
                                                     onClick={() => toggleSolution(q.id)}
-                                                    className={`flex items-center gap-2 text-xs font-semibold transition-all ${isExpanded ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-500'}`}
+                                                    className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${isExpanded ? 'text-emerald-500' : 'text-zinc-600 hover:text-emerald-500'}`}
                                                 >
-                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                                    {isExpanded ? 'Çözümü Gizle' : 'Çözümü Göster'}
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isExpanded ? 'bg-emerald-500/10' : 'bg-white/[0.03]'}`}>
+                                                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                    </div>
+                                                    {isExpanded ? 'Analizi Gizle' : 'Çözüm Analizi'}
                                                 </button>
-                                                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'mt-3 opacity-100 max-h-[500px]' : 'max-h-0 opacity-0'}`}>
-                                                    <div className="p-3 rounded-xl bg-emerald-500/5 border border-zinc-800/50">
+                                                <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'mt-6 opacity-100 max-h-[800px]' : 'max-h-0 opacity-0'}`}>
+                                                    <div className="p-6 rounded-[28px] bg-emerald-500/[0.02] border border-emerald-500/10 backdrop-blur-sm">
                                                         <SolutionContent question={q} language={language} />
                                                     </div>
                                                 </div>
@@ -463,10 +496,10 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => onEdit(q)}
-                                    className="text-zinc-500 hover:text-orange-500 hover:bg-orange-500/10 shrink-0 h-8 w-8 rounded-lg transition-all"
+                                    className="text-zinc-600 hover:text-white hover:bg-white/5 shrink-0 h-10 w-10 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/10"
                                     title="Düzenle"
                                 >
-                                    <Edit2 className="w-3.5 h-3.5" />
+                                    <Edit2 className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
@@ -476,6 +509,7 @@ function GroupedQuestionCard({ groupId, stemText, stemTextEN, imageUrl, question
         </div>
     )
 }
+
 
 
 // ─── Question Table ───────────────────────────────────────

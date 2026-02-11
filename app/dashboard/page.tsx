@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, Fragment } fr
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import katex from 'katex'
-import { User, LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight } from 'lucide-react'
+import { User, LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
@@ -360,30 +360,34 @@ export default function Dashboard() {
 
           {/* Right Action Group (Filters & Category Management) */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 pr-2 gap-1 group hover:border-orange-500/30 transition-all duration-300">
+            <div className="flex items-center bg-zinc-950/50 border border-white/[0.05] backdrop-blur-md rounded-2xl p-1 pr-3 gap-1 group hover:border-orange-500/30 transition-all duration-500 shadow-lg">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px] bg-transparent border-0 text-zinc-300 focus:ring-0 hover:text-white transition-colors">
-                  <SelectValue placeholder="Kategori" />
+                <SelectTrigger className="w-[180px] bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                    <SelectValue placeholder="KATEGORİ" />
+                  </div>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                  <SelectItem value="all" className="hover:bg-zinc-800 cursor-pointer">
+                <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[220px]">
+                  <SelectItem value="all" className="rounded-xl focus:bg-white/5 hover:bg-white/5 cursor-pointer py-3 text-[11px] font-black uppercase tracking-widest text-zinc-400 focus:text-white">
                     Tüm Kategoriler
                   </SelectItem>
+                  <div className="h-px bg-white/[0.05] my-2" />
                   {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
                     <Fragment key={parent.id}>
-                      <SelectItem value={parent.id.toString()} className="font-bold text-orange-500 bg-orange-500/5 mt-1">
+                      <SelectItem value={parent.id.toString()} className="rounded-xl focus:bg-orange-500/10 focus:text-orange-500 mt-1 font-black text-[11px] uppercase tracking-[0.1em] text-orange-500/80 py-3">
                         {parent.name}
                       </SelectItem>
                       {categories.filter(c => c.parentId === parent.id).map(child => (
-                        <SelectItem key={child.id} value={child.id.toString()} className="pl-6 text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer">
-                          ㄴ {child.name}
+                        <SelectItem key={child.id} value={child.id.toString()} className="pl-8 rounded-xl focus:bg-white/5 focus:text-white text-zinc-400 text-[11px] font-medium py-2.5">
+                          {child.name}
                         </SelectItem>
                       ))}
                     </Fragment>
                   ))}
                 </SelectContent>
               </Select>
-              <div className="w-px h-4 bg-zinc-800 mx-1" />
+              <div className="w-px h-5 bg-white/[0.05] mx-1" />
               <CategoryForm categories={categories} onSuccess={() => fetchData()} />
             </div>
 
@@ -391,12 +395,14 @@ export default function Dashboard() {
             <Button
               onClick={() => setShowExportDialog(true)}
               disabled={exporting || filteredQuestions.length === 0}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-900/20 hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95"
+              className="bg-white hover:bg-zinc-200 text-black font-black px-8 h-12 rounded-[18px] shadow-[0_20px_40px_rgba(0,0,0,0.3)] active:scale-95 transition-all flex items-center gap-3 border-0 group"
             >
-              {exporting ? '⏳...' : (
+              {exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
                 <>
-                  <FileText size={18} />
-                  <span>PDF EXPORT</span>
+                  <FileText className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  <span className="text-xs uppercase tracking-[0.2em]">PDF DIŞA AKTAR</span>
                 </>
               )}
             </Button>
