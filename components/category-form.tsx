@@ -77,7 +77,7 @@ export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-xl text-zinc-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all duration-300 border border-white/5 hover:border-orange-500/30 active:scale-95"
+                    className="h-10 w-10 rounded-xl text-zinc-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all duration-300 border border-white/5 hover:border-orange-500/30 active:scale-95"
                     title="Yeni Kategori Ekle"
                 >
                     <FolderPlus size={18} />

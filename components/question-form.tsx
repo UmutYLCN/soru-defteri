@@ -86,7 +86,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black px-7 py-2.5 rounded-xl shadow-xl shadow-orange-950/20 hover:shadow-orange-500/30 transition-all duration-500 flex items-center gap-2.5 border-0 active:scale-95 group">
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black px-7 h-12 rounded-xl shadow-xl shadow-orange-950/20 hover:shadow-orange-500/30 transition-all duration-500 flex items-center gap-2.5 border-0 active:scale-95 group">
                     <Plus className="w-5 h-5 stroke-[3px] transition-transform duration-500 group-hover:rotate-90" />
                     <span className="tracking-tight">Yeni Soru Ekle</span>
                 </Button>

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import katex from 'katex'
@@ -351,7 +352,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-40 relative z-10">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           {/* Left Action Group */}
           <div className="flex items-center gap-3">
             <QuestionForm categories={categories} onSuccess={() => fetchData()} />
@@ -360,30 +361,75 @@ export default function Dashboard() {
 
           {/* Right Action Group (Filters & Category Management) */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-zinc-950/50 border border-white/[0.05] backdrop-blur-md rounded-2xl p-1 pr-3 gap-1 group hover:border-orange-500/30 transition-all duration-500 shadow-lg">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px] bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-10">
-                  <div className="flex items-center gap-2">
+            <div className="flex items-center bg-zinc-950/50 border border-white/[0.05] backdrop-blur-md rounded-2xl h-12 px-1 gap-1 group hover:border-orange-500/30 transition-all duration-500 shadow-lg">
+              <AnimatePresence mode="popLayout">
+                {(() => {
+                  const selectedCat = categories.find(c => c.id.toString() === selectedCategory);
+                  const activeParentId = selectedCat?.parentId || (selectedCat && !selectedCat.parentId ? selectedCat.id : null);
+                  const children = categories.filter(c => c.parentId === activeParentId);
+
+                  if (activeParentId && children.length > 0) {
+                    return (
+                      <motion.div
+                        key="child-select"
+                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="flex items-center gap-1"
+                      >
+                        <Select
+                          value={selectedCat?.parentId ? selectedCategory : "all"}
+                          onValueChange={(value) => setSelectedCategory(value === "all" ? activeParentId.toString() : value)}
+                        >
+                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-full rounded-xl px-4">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                              <SelectValue placeholder="Alt Kategori" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[200px]">
+                            <SelectItem value="all" className="rounded-xl focus:bg-white/5 hover:bg-white/5 cursor-pointer py-3 text-[11px] font-black uppercase tracking-widest text-zinc-400 focus:text-white">
+                              Tüm Alt Kategoriler
+                            </SelectItem>
+                            <div className="h-px bg-white/[0.05] my-2" />
+                            {children.map(child => (
+                              <SelectItem key={child.id} value={child.id.toString()} className="rounded-xl focus:bg-white/5 focus:text-white text-zinc-400 text-[11px] font-medium py-2.5">
+                                {child.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="w-px h-5 bg-white/[0.05] mx-1" />
+                      </motion.div>
+                    );
+                  }
+                  return null;
+                })()}
+              </AnimatePresence>
+
+              <Select
+                value={(() => {
+                  const cat = categories.find(c => c.id.toString() === selectedCategory);
+                  return cat?.parentId?.toString() || selectedCategory;
+                })()}
+                onValueChange={(value) => setSelectedCategory(value)}
+              >
+                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-full rounded-2xl px-4">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                     <SelectValue placeholder="KATEGORİ" />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[220px]">
+                <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[200px]">
                   <SelectItem value="all" className="rounded-xl focus:bg-white/5 hover:bg-white/5 cursor-pointer py-3 text-[11px] font-black uppercase tracking-widest text-zinc-400 focus:text-white">
                     Tüm Kategoriler
                   </SelectItem>
                   <div className="h-px bg-white/[0.05] my-2" />
                   {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
-                    <Fragment key={parent.id}>
-                      <SelectItem value={parent.id.toString()} className="rounded-xl focus:bg-orange-500/10 focus:text-orange-500 mt-1 font-black text-[11px] uppercase tracking-[0.1em] text-orange-500/80 py-3">
-                        {parent.name}
-                      </SelectItem>
-                      {categories.filter(c => c.parentId === parent.id).map(child => (
-                        <SelectItem key={child.id} value={child.id.toString()} className="pl-8 rounded-xl focus:bg-white/5 focus:text-white text-zinc-400 text-[11px] font-medium py-2.5">
-                          {child.name}
-                        </SelectItem>
-                      ))}
-                    </Fragment>
+                    <SelectItem key={parent.id} value={parent.id.toString()} className="rounded-xl focus:bg-orange-500/10 focus:text-orange-500 mt-1 font-black text-[11px] uppercase tracking-[0.1em] text-orange-500/80 py-3">
+                      {parent.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
