@@ -193,12 +193,15 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
     }
 
     return (
-        <div className="group relative p-6 rounded-[28px] border border-white/[0.05] bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/[0.1] transition-all duration-500 overflow-hidden shadow-xl hover:shadow-black/40">
+        <div
+            className="group relative p-6 rounded-[28px] border border-white/[0.05] bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/[0.1] transition-all duration-500 shadow-xl hover:shadow-black/40"
+            style={{ zIndex: showVariantPopover ? 50 : 1 }}
+        >
             {/* Subtle Gradient Accent */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
             {/* Header row: number + category on left, action buttons on right */}
-            <div className="flex items-center justify-between mb-5 relative z-10">
+            <div className={`flex items-center justify-between mb-5 relative ${showVariantPopover ? 'z-50' : 'z-10'}`}>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-zinc-950/50 border border-white/[0.05] shadow-inner">
                         <span className="text-zinc-500 font-black text-xs">#{index + 1}</span>
@@ -238,12 +241,12 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                             {generatingVariants ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                                <Copy className="w-4 h-4" />
+                                <Sparkles className="w-4 h-4" />
                             )}
                         </Button>
 
                         {showVariantPopover && (
-                            <div className="absolute right-0 top-full mt-3 w-72 bg-zinc-950/95 border border-white/[0.08] backdrop-blur-2xl rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-6 z-50 animate-in fade-in zoom-in-95 duration-500">
+                            <div className="absolute right-0 top-full mt-3 w-72 bg-zinc-950/95 border border-white/[0.08] backdrop-blur-2xl rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-6 z-[100] animate-in fade-in zoom-in-95 duration-500">
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="text-sm font-black text-white tracking-tight uppercase tracking-widest">Akıllı Varyant</h4>
                                     <button

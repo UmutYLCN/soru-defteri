@@ -206,7 +206,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-zinc-900/50 border border-zinc-800/80 backdrop-blur-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 hover:border-orange-500/50 font-bold px-6 h-12 rounded-xl shadow-xl shadow-black/40 transition-all duration-500 flex items-center gap-2 active:scale-95 group">
+                <Button className="bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] backdrop-blur-xl font-black px-7 h-12 rounded-xl shadow-2xl transition-all duration-500 flex items-center gap-2.5 active:scale-95 group">
                     <div className="relative">
                         <Wand2 className="w-5 h-5 text-orange-500 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-orange-500 blur-sm opacity-0 group-hover:opacity-40 transition-opacity" />

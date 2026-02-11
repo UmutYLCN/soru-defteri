@@ -361,7 +361,7 @@ export default function Dashboard() {
 
           {/* Right Action Group (Filters & Category Management) */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-zinc-950/50 border border-white/[0.05] backdrop-blur-md rounded-2xl h-12 px-1 gap-1 group hover:border-orange-500/30 transition-all duration-500 shadow-lg">
+            <div className="flex items-center gap-2 h-12">
               <AnimatePresence mode="popLayout">
                 {(() => {
                   const selectedCat = categories.find(c => c.id.toString() === selectedCategory);
@@ -376,13 +376,13 @@ export default function Dashboard() {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: 10, scale: 0.95 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-2 h-full"
                       >
                         <Select
                           value={selectedCat?.parentId ? selectedCategory : "all"}
                           onValueChange={(value) => setSelectedCategory(value === "all" ? activeParentId.toString() : value)}
                         >
-                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-full rounded-xl px-4">
+                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all h-full rounded-xl px-4">
                             <div className="flex items-center gap-2 whitespace-nowrap">
                               <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                               <SelectValue placeholder="Alt Kategori" />
@@ -415,7 +415,7 @@ export default function Dashboard() {
                 })()}
                 onValueChange={(value) => setSelectedCategory(value)}
               >
-                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-transparent border-0 text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white transition-all h-full rounded-2xl px-4">
+                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-bold text-xs uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all h-full rounded-xl px-4">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                     <SelectValue placeholder="KATEGORİ" />
@@ -433,7 +433,6 @@ export default function Dashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="w-px h-5 bg-white/[0.05] mx-1" />
               <CategoryForm categories={categories} onSuccess={() => fetchData()} />
             </div>
 
@@ -441,13 +440,13 @@ export default function Dashboard() {
             <Button
               onClick={() => setShowExportDialog(true)}
               disabled={exporting || filteredQuestions.length === 0}
-              className="bg-white hover:bg-zinc-200 text-black font-black px-8 h-12 rounded-[18px] shadow-[0_20px_40px_rgba(0,0,0,0.3)] active:scale-95 transition-all flex items-center gap-3 border-0 group"
+              className="bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] backdrop-blur-xl font-black px-8 h-12 rounded-xl shadow-2xl active:scale-95 transition-all flex items-center gap-3 group"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <FileText className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  <FileText className="w-5 h-5 text-orange-500 group-hover:rotate-12 transition-transform" />
                   <span className="text-xs uppercase tracking-[0.2em]">PDF DIŞA AKTAR</span>
                 </>
               )}
