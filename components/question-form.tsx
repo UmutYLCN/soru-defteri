@@ -86,9 +86,8 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] backdrop-blur-xl font-black px-7 h-12 rounded-xl shadow-2xl transition-all duration-500 flex items-center gap-2.5 active:scale-95 group">
+                <Button className="bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] backdrop-blur-xl font-black h-12 w-12 rounded-xl shadow-2xl transition-all duration-500 flex items-center justify-center active:scale-95 group">
                     <Plus className="w-5 h-5 stroke-[3px] text-orange-500 transition-transform duration-500 group-hover:rotate-90" />
-                    <span className="tracking-tight">Yeni Soru Ekle</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[680px] max-h-[92vh] overflow-y-auto bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white p-0 shadow-[0_0_100px_rgba(0,0,0,0.9)] rounded-[32px] custom-scrollbar">

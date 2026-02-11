@@ -11,6 +11,7 @@ import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
 import { CategoryForm } from '@/components/category-form'
 import { AIGenerator } from '@/components/ai-generator'
+import { ExamSetupDialog } from '@/components/exam-setup-dialog'
 import { EditQuestionDialog } from '@/components/edit-question-dialog'
 import {
   Select,
@@ -360,6 +361,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <QuestionForm categories={categories} onSuccess={() => fetchData()} />
             <AIGenerator categories={categories} onSuccess={() => fetchData()} />
+            <ExamSetupDialog categories={categories} />
           </div>
 
           {/* Right Action Group (Filters & Category Management) */}
