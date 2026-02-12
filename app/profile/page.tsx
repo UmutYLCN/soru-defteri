@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Crown, Zap, Calendar, Clock, Globe, ChevronRight, Sparkles, Check } from 'lucide-react'
+import { ArrowLeft, Crown, Zap, Calendar, Clock, Globe, ChevronRight, Sparkles, Check, Trophy, Medal, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 interface UserProfile {
@@ -20,6 +20,15 @@ interface UserProfile {
     preferredLanguage: string
     createdAt: string
     lastLoginAt: string | null
+    rank?: number
+}
+
+interface LeaderboardUser {
+    id: string
+    name: string | null
+    image: string | null
+    totalCreditsUsed: number
+    subscriptionPlan: string
 }
 
 const planConfig: Record<string, { label: string; color: string; icon: string; credits: number }> = {
@@ -37,6 +46,9 @@ export default function ProfilePage() {
     const [authUser, setAuthUser] = useState<any>(null)
     const [savingLang, setSavingLang] = useState(false)
     const [savedLang, setSavedLang] = useState(false)
+    const [showLeaderboard, setShowLeaderboard] = useState(false)
+    const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([])
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
 
     useEffect(() => {
         async function fetchProfile() {
@@ -57,6 +69,13 @@ export default function ProfilePage() {
                 }
                 const data = await res.json()
                 if (data?.id) {
+                    // Fetch rank
+                    const lbRes = await fetch('/api/leaderboard')
+                    if (lbRes.ok) {
+                        const lbData = await lbRes.json()
+                        data.rank = lbData.userRank
+                        setLeaderboardData(lbData.leaderboard)
+                    }
                     setProfile(data)
                 } else {
                     setError('Kullanıcı verisi eksik')
@@ -70,6 +89,24 @@ export default function ProfilePage() {
         }
         fetchProfile()
     }, [router])
+
+    const fetchLeaderboard = async () => {
+        setShowLeaderboard(true)
+        if (leaderboardData.length > 0) return
+
+        setLoadingLeaderboard(true)
+        try {
+            const res = await fetch('/api/leaderboard')
+            if (res.ok) {
+                const data = await res.json()
+                setLeaderboardData(data.leaderboard)
+            }
+        } catch (error) {
+            console.error('Leaderboard fetch error:', error)
+        } finally {
+            setLoadingLeaderboard(false)
+        }
+    }
 
     const handleLanguageChange = async (lang: string) => {
         if (!profile) return
@@ -212,17 +249,96 @@ export default function ProfilePage() {
                         </p>
                     </div>
 
-                    <div className="bg-[#0c0c0e] rounded-[24px] border border-white/[0.05] p-5">
+                    <div
+                        onClick={fetchLeaderboard}
+                        className="bg-[#0c0c0e] rounded-[24px] border border-white/[0.05] p-5 cursor-pointer hover:border-orange-500/30 transition-all group relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex items-center gap-2 mb-3">
-                            <Calendar className="w-4 h-4 text-blue-500" />
-                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Üyelik</span>
+                            <Trophy className="w-4 h-4 text-amber-500" />
+                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Sıralama</span>
                         </div>
-                        <div className="text-sm font-bold text-white mt-1">{memberSince}</div>
-                        <p className="text-[10px] text-zinc-600 mt-2 font-medium">
-                            tarihinden beri üye
+                        <div className="text-3xl font-black text-white">#{profile.rank || '—'}</div>
+                        <p className="text-[10px] text-zinc-600 mt-2 font-medium flex items-center gap-1">
+                            tüm kullanıcılar arasında <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                         </p>
                     </div>
                 </div>
+
+                {/* Leaderboard Modal */}
+                {showLeaderboard && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div
+                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                            onClick={() => setShowLeaderboard(false)}
+                        />
+                        <div className="relative w-full max-w-md bg-[#0c0c0e] border border-white/[0.1] rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                            <div className="p-6 border-b border-white/[0.05] flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                                        <Trophy className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                    <h3 className="font-black text-white">Global Sıralama</h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowLeaderboard(false)}
+                                    className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-zinc-500" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 max-h-[400px] overflow-y-auto space-y-2">
+                                {loadingLeaderboard ? (
+                                    <div className="py-20 flex flex-col items-center gap-4">
+                                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                ) : (
+                                    leaderboardData.map((user, index) => (
+                                        <div
+                                            key={user.id}
+                                            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${user.id === profile.id
+                                                ? 'bg-orange-500/10 border-orange-500/20'
+                                                : 'bg-white/[0.02] border-transparent hover:border-white/10'
+                                                }`}
+                                        >
+                                            <div className="w-8 flex justify-center">
+                                                {index === 0 ? <Medal className="w-5 h-5 text-amber-400" /> :
+                                                    index === 1 ? <Medal className="w-5 h-5 text-zinc-400" /> :
+                                                        index === 2 ? <Medal className="w-5 h-5 text-orange-400" /> :
+                                                            <span className="text-xs font-black text-zinc-600">#{index + 1}</span>
+                                                }
+                                            </div>
+
+                                            <div className="w-10 h-10 rounded-xl bg-zinc-800 shrink-0 overflow-hidden border border-white/10">
+                                                {user.image ? (
+                                                    <img src={user.image} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-orange-500 text-white font-black text-sm">
+                                                        {(user.name || 'U').charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-white truncate">
+                                                    {user.name || 'Gizli Kullanıcı'}
+                                                    {user.id === profile.id && <span className="ml-2 text-[10px] text-orange-500 uppercase font-black">(Sen)</span>}
+                                                </p>
+                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{user.subscriptionPlan} ÜYE</p>
+                                            </div>
+
+                                            <div className="text-right">
+                                                <div className="text-sm font-black text-white">{user.totalCreditsUsed}</div>
+                                                <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter">Soru</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Settings Section */}
                 <div className="bg-[#0c0c0e] rounded-[32px] border border-white/[0.05] p-8 mb-6">
