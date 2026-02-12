@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import katex from 'katex'
-import { User, LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight, Loader2 } from 'lucide-react'
+import { LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight, Loader2, User as UserIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [pdfThumbnail, setPdfThumbnail] = useState<string | null>(null)
   const [language, setLanguage] = useState<'tr' | 'en'>('tr')
   const [user, setUser] = useState<any>(null)
+  const [userCredits, setUserCredits] = useState<number>(0)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -87,16 +88,22 @@ export default function Dashboard() {
         setUser(authUser)
       }
 
-      const [questionsRes, categoriesRes] = await Promise.all([
+      const [questionsRes, categoriesRes, userRes] = await Promise.all([
         fetch('/api/questions'),
-        fetch('/api/categories')
+        fetch('/api/categories'),
+        fetch('/api/user/me')
       ])
 
       const questionsData = await questionsRes.json()
       const categoriesData = await categoriesRes.json()
+      const userData = await userRes.json()
 
       setQuestions(Array.isArray(questionsData) ? questionsData : [])
       setCategories(Array.isArray(categoriesData) ? categoriesData : [])
+      if (userData?.credits !== undefined) setUserCredits(userData.credits)
+      if (!newLang && userData?.preferredLanguage) {
+        setLanguage(userData.preferredLanguage as 'tr' | 'en')
+      }
       if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -280,44 +287,42 @@ export default function Dashboard() {
                   {categories.filter(c => !c.parentId).length}
                 </span>
               </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Soru Hakkı</span>
+                <span className={`text-lg font-black leading-none ${userCredits > 5 ? 'text-emerald-400' : userCredits > 0 ? 'text-amber-400' : 'text-red-400'}`}>{userCredits}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* TR/EN Toggle Premium */}
-            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
-              <button
-                onClick={() => setLanguage('tr')}
-                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'tr'
-                  ? 'bg-white text-black shadow-lg scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-              >
-                TR
-              </button>
-              <button
-                onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'en'
-                  ? 'bg-white text-black shadow-lg scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-              >
-                EN
-              </button>
-            </div>
 
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all duration-300 ${showUserMenu
-                  ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+                  ? 'bg-white/10 border-white/20 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]'
                   : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
               >
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-orange-500 overflow-hidden flex items-center justify-center shrink-0">
                   {user?.user_metadata?.avatar_url ? (
-                    <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const initial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase();
+                          parent.innerHTML = `<span class="text-xs font-black text-white">${initial}</span>`;
+                        }
+                      }}
+                    />
                   ) : (
-                    <User size={16} />
+                    <span className="text-xs font-black text-white">
+                      {(user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                    </span>
                   )}
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline max-w-[100px] truncate">
@@ -334,6 +339,17 @@ export default function Dashboard() {
                   </div>
 
 
+                  <Link
+                    href="/profile"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                      <UserIcon size={16} />
+                    </div>
+                    <span>Profil</span>
+                  </Link>
+
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold"
@@ -341,7 +357,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                       <LogOut size={16} />
                     </div>
-                    <span>{language === 'tr' ? 'Çıkış Yap' : 'Sign Out'}</span>
+                    <span>Çıkış Yap</span>
                   </button>
 
                   <div className="mt-2 pt-2 border-t border-zinc-800 px-2">

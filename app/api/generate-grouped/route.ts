@@ -35,6 +35,7 @@ export async function POST(request: Request) {
                 stemTextEN: result.stemTextEN || null,
                 imageUrl: result.imageUrl || null,
                 categoryId: categoryId ? parseInt(categoryId) : null,
+                userId: user.id,
             }
         })
 

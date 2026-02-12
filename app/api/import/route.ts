@@ -100,9 +100,11 @@ export async function POST(request: Request) {
         const categoryMap: Record<string, number> = {}
 
         for (const name of categoryNames) {
-            let category = await prisma.category.findUnique({ where: { name } })
+            let category = await prisma.category.findUnique({
+                where: { name_userId: { name, userId: user.id } }
+            })
             if (!category) {
-                category = await prisma.category.create({ data: { name } })
+                category = await prisma.category.create({ data: { name, userId: user.id } })
             }
             categoryMap[name] = category.id
         }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { processNotebookQuestion } from '@/lib/gemini'
 import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase-server'
 
 interface NotebookQuestion {
     question: string
@@ -18,6 +19,13 @@ interface NotebookData {
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { data, categoryId } = await req.json() as { data: NotebookData, categoryId?: string }
 
         if (!data?.quiz || !Array.isArray(data.quiz)) {
@@ -47,6 +55,7 @@ export async function POST(req: Request) {
                 // Save to database
                 await prisma.question.create({
                     data: {
+                        userId: user.id,
                         questionText: processed.questionText,
                         optionA: processed.optionA,
                         optionB: processed.optionB,

@@ -3,60 +3,93 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id               String           @id @default(cuid())
-  email            String           @unique
-  name             String?
-  image            String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  
-  // Üyelik ve Kredi Sistemi
-  subscriptionPlan SubscriptionPlan @default(FREE)
-  credits          Int              @default(5)      // Mevcut kredi bakiyesi
-  
-  // İlişkiler
-  questions        Question[]
-}
-
+// ─── Abonelik Planları ────────────────────────────────────
 enum SubscriptionPlan {
   FREE
-  STARTER   // $4.99 - 500 Soru
-  PRO       // $9.99 - 2000 Soru
-  ELITE     // $19.99 - 10000 Soru
+  STARTER
+  PRO
+  ELITE
 }
 
+// ─── Abonelik Durumu ──────────────────────────────────────
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  EXPIRED
+  TRIALING
+}
+
+// ─── Kullanıcı ────────────────────────────────────────────
+model User {
+  id                   String             @id               // Supabase Auth user ID
+  email                String             @unique
+  name                 String?
+  image                String?
+
+  // Abonelik Bilgileri
+  subscriptionPlan     SubscriptionPlan   @default(FREE)
+  subscriptionStatus   SubscriptionStatus @default(ACTIVE)
+  subscriptionStartAt  DateTime?                            // Abonelik başlangıcı
+  subscriptionEndAt    DateTime?                            // Abonelik bitiş / yenileme tarihi
+  trialEndAt           DateTime?                            // Deneme süresi bitişi
+
+  // Kredi / Kota Sistemi
+  credits              Int                @default(10)      // Mevcut kredi bakiyesi
+  totalCreditsUsed     Int                @default(0)       // Toplam kullanılan kredi
+
+  // Ödeme Entegrasyonu (Stripe vb.)
+  stripeCustomerId     String?            @unique           // Stripe müşteri ID
+  stripeSubscriptionId String?            @unique           // Stripe abonelik ID
+
+  // Tercihler
+  preferredLanguage  String             @default("tr")    // Varsayılan dil (tr/en)
+
+  // Zaman Damgaları
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  lastLoginAt          DateTime?                            // Son giriş zamanı
+}
+
+// ─── Kategori ─────────────────────────────────────────────
 model Category {
   id             Int              @id @default(autoincrement())
-  name           String           @unique
+  name           String
   parentId       Int?
+  userId         String?
   createdAt      DateTime         @default(now())
   parent         Category?        @relation("SubCategories", fields: [parentId], references: [id])
   children       Category[]       @relation("SubCategories")
   questions      Question[]
   questionGroups QuestionGroup[]
+
+  @@unique([name, userId])
 }
 
+// ─── Soru Grubu (Bütünleşik Sorular) ─────────────────────
 model QuestionGroup {
   id           Int       @id @default(autoincrement())
   stemText     String
   stemTextEN   String?
   categoryId   Int?
+  userId       String?
   imageUrl     String?   
   createdAt    DateTime  @default(now())
   category     Category? @relation(fields: [categoryId], references: [id])
   questions    Question[]
 }
 
+// ─── Soru ─────────────────────────────────────────────────
 model Question {
   id             Int            @id @default(autoincrement())
   categoryId     Int?
   groupId        Int?
-  userId         String?        // Soruyu oluşturan kullanıcı
+  userId         String?
   questionText   String
   optionA        String
   optionB        String
@@ -75,5 +108,4 @@ model Question {
   
   category       Category?      @relation(fields: [categoryId], references: [id])
   group          QuestionGroup? @relation(fields: [groupId], references: [id])
-  user           User?          @relation(fields: [userId], references: [id])
 }

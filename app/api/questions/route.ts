@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
 import { createClient } from '@/lib/supabase-server'
+import { ensureUserExists } from '@/lib/user'
 
 export async function GET() {
     try {
@@ -11,6 +11,9 @@ export async function GET() {
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+
+        // Kullanıcı kaydını senkronize et
+        await ensureUserExists(user)
 
         const questions = await prisma.question.findMany({
             where: {

@@ -1,11 +1,22 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const categories = await prisma.category.findMany({
+            where: {
+                userId: user.id
+            },
             include: {
                 _count: {
                     select: { questions: true }
@@ -22,6 +33,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { name, parentId } = await request.json()
 
         if (!name || typeof name !== 'string') {
@@ -31,7 +49,8 @@ export async function POST(request: Request) {
         const category = await prisma.category.create({
             data: {
                 name: name.trim(),
-                parentId: parentId ? parseInt(String(parentId)) : null
+                parentId: parentId ? parseInt(String(parentId)) : null,
+                userId: user.id
             }
         })
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MathText } from './math-text'
-import { Trash2, Edit2, ChevronDown, Copy, Loader2, Check, X, Layers, Sparkles } from 'lucide-react'
+import { Trash2, Edit2, ChevronDown, Copy, Loader2, Check, X, Layers, Sparkles, Languages } from 'lucide-react'
 import { ConfirmDialog } from './confirm-dialog'
 
 
@@ -151,7 +151,10 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
     const [variantCount, setVariantCount] = useState(3)
     const [generatingVariants, setGeneratingVariants] = useState(false)
     const [variantResult, setVariantResult] = useState<'success' | 'error' | null>(null)
+    const [localLang, setLocalLang] = useState<'tr' | 'en'>(language)
     const variantRef = useRef<HTMLDivElement>(null)
+
+    const activeLang = localLang
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -216,6 +219,21 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                     )}
                 </div>
                 <div className="flex items-center gap-2" ref={variantRef}>
+                    {/* Per-question TR/EN toggle */}
+                    {question.questionTextEN && (
+                        <button
+                            onClick={() => setLocalLang(prev => prev === 'tr' ? 'en' : 'tr')}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${localLang === 'en'
+                                ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
+                                : 'bg-white/[0.03] border border-white/[0.06] text-zinc-500 hover:text-zinc-300'
+                                }`}
+                            title={localLang === 'tr' ? 'İngilizce göster' : 'Türkçe göster'}
+                        >
+                            <Languages className="w-3.5 h-3.5" />
+                            {localLang.toUpperCase()}
+                        </button>
+                    )}
+
                     <Button
                         variant="ghost"
                         size="icon"
@@ -322,7 +340,7 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
             <div className="relative z-10">
                 <div className="text-white text-xl font-medium mb-6 leading-relaxed block">
                     <MathText
-                        text={language === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
+                        text={activeLang === 'en' && question.questionTextEN ? question.questionTextEN : question.questionText}
                     />
                 </div>
 
@@ -337,9 +355,9 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                     </div>
                 )}
 
-                <OptionsGrid question={question} language={language} />
+                <OptionsGrid question={question} language={activeLang} />
 
-                {(language === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
+                {(activeLang === 'en' ? (question.solutionEN || question.solution) : question.solution) && (
                     <div className="mt-6 pt-5 border-t border-white/[0.05]">
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
@@ -348,13 +366,13 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isExpanded ? 'bg-emerald-500/10' : 'bg-white/[0.03]'}`}>
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`} />
                             </div>
-                            {isExpanded ? (language === 'en' ? 'Hide Step-by-Step' : 'Çözümü Gizle') : (language === 'en' ? 'Show Step-by-Step' : 'Çözüm Analizini Göster')}
+                            {isExpanded ? 'Çözümü Gizle' : 'Çözüm Analizini Göster'}
                         </button>
 
                         <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'mt-6 opacity-100 max-h-[1000px]' : 'max-h-0 opacity-0'}`}>
                             <div className="p-6 rounded-[32px] bg-emerald-500/[0.02] border border-emerald-500/10 backdrop-blur-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[60px] rounded-full pointer-events-none" />
-                                <SolutionContent question={question} language={language} />
+                                <SolutionContent question={question} language={activeLang} />
                             </div>
                         </div>
                     </div>
@@ -572,10 +590,11 @@ export function QuestionTable({ questions, onEdit, onDelete, onVariantsGenerated
 
     if (questions.length === 0) {
         return (
-            <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-                <div className="text-6xl mb-4">📝</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Henüz soru eklenmemiş</h3>
-                <p className="text-zinc-400">Yeni soru ekleyerek veya CSV dosyası içe aktararak başlayın.</p>
+            <div className="text-center py-16 bg-[#0c0c0e] rounded-[32px] border border-white/[0.05] shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.02] to-transparent pointer-events-none" />
+                <div className="text-6xl mb-6 relative z-10">📝</div>
+                <h3 className="text-xl font-black text-white mb-2 relative z-10">Henüz soru eklenmemiş</h3>
+                <p className="text-zinc-500 font-medium relative z-10 max-w-sm mx-auto">Yeni soru ekleyerek veya yapay zeka ile otomatik sorular oluşturarak başlayın.</p>
             </div>
         )
     }
