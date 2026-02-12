@@ -90,7 +90,7 @@ export function AuthModals({ isOpen, onClose, initialView = 'login' }: AuthModal
                         </DialogTitle>
                         <DialogDescription className="text-zinc-500 font-medium text-base mt-2">
                             {view === 'login'
-                                ? 'NoteDiur dünyasına geri dönün.'
+                                ? 'Quesly dünyasına geri dönün.'
                                 : 'Premium soru deneyimine hemen başlayın.'}
                         </DialogDescription>
                     </DialogHeader>

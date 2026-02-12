@@ -41,15 +41,10 @@ export default function LandingPage() {
             {/* Premium Floating Header - Same Design as Dashboard */}
             <header className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-6xl">
                 <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center gap-4 group cursor-pointer">
-                        <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative shadow-[0_0_25px_rgba(249,115,22,0.15)] transition-all duration-300 group-hover:scale-105 group-hover:border-orange-500/30">
-                            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                                <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2.5" />
-                                <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
-                        </div>
-                        <h1 className="text-2xl font-black text-white tracking-tighter">NoteDiur</h1>
+                    <div className="flex items-center gap-2 group cursor-pointer">
+                        <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
+                            Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.</span>
+                        </h1>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -210,7 +205,7 @@ export default function LandingPage() {
                         <div className="relative">
                             <div className="bg-white p-8 rounded-[32px] shadow-[0_40px_80px_rgba(0,0,0,0.5)] rotate-2 hover:rotate-0 transition-transform duration-700">
                                 <div className="border-b-2 border-zinc-100 pb-4 mb-6">
-                                    <h4 className="text-black font-black text-xl">NOTEDIUR EXPORT</h4>
+                                    <h4 className="text-black font-black text-xl">QUESLY EXPORT</h4>
                                     <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Soru Kağıdı #412</p>
                                 </div>
                                 <div className="space-y-6">
@@ -312,14 +307,9 @@ export default function LandingPage() {
                 <div className="container mx-auto px-6 max-w-6xl">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
                         <div>
-                            <div className="flex items-center gap-3 justify-center md:justify-start mb-6">
-                                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                                    <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="3" strokeLinecap="round" />
-                                    </svg>
-                                </div>
-                                <h4 className="text-xl font-black text-white">NoteDiur</h4>
-                            </div>
+                            <h4 className="text-2xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
+                                Quesly<span className="text-orange-500 text-3xl leading-[0] ml-0.5">.</span>
+                            </h4>
                             <p className="text-zinc-500 max-w-xs font-medium">
                                 Eğitmenler ve öğrenciler için modern, yapay zeka destekli soru bankası yönetim platformu.
                             </p>
@@ -347,7 +337,7 @@ export default function LandingPage() {
 
                     <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                         <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
-                            © 2026 NoteDiur Premium • Built for Excellence
+                            © 2026 Quesly Premium • Built for Excellence
                         </p>
                         <div className="flex gap-6">
                             <span className="text-zinc-600 text-xs font-bold hover:text-white cursor-pointer uppercase tracking-widest transition-colors">Gizlilik</span>

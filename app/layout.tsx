@@ -19,7 +19,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "NoteDiur",
+  title: "Quesly",
   description: "Geometric question tracking and export system.",
 };
 

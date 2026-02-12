@@ -439,7 +439,7 @@ export default function ProfilePage() {
 
                 {/* Footer */}
                 <div className="text-center mt-8">
-                    <p className="text-[10px] text-zinc-700 font-medium">NoteDiur v1.0</p>
+                    <p className="text-[10px] text-zinc-700 font-medium">Quesly v1.0</p>
                 </div>
             </div>
         </div>
