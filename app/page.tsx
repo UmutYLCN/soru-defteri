@@ -40,36 +40,30 @@ export default function LandingPage() {
 
             {/* Premium Floating Header - Same Design as Dashboard */}
             <header className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-6xl">
-                <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[32px] px-8 py-3.5 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]">
                     <div className="flex items-center gap-2 group cursor-pointer">
                         <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
                             Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.</span>
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        {user ? (
-                            <Link href="/dashboard">
-                                <Button
-                                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-orange-500/10 flex items-center gap-2"
-                                >
-                                    <LayoutDashboard size={18} />
-                                    Dashboard
-                                </Button>
-                            </Link>
-                        ) : (
+                    <div className="flex items-center gap-6">
+                        {!user && (
                             <>
                                 <button
                                     onClick={openLogin}
-                                    className="text-zinc-400 hover:text-white text-sm font-bold transition-colors px-4 py-2"
+                                    className="text-zinc-500 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all px-4 py-2 hover:scale-105"
                                 >
                                     Giriş Yap
                                 </button>
                                 <Button
                                     onClick={openRegister}
-                                    className="bg-white hover:bg-zinc-200 text-black font-bold px-6 py-2.5 rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-white/5"
+                                    className="bg-white hover:bg-zinc-100 text-black font-black px-6 py-2.5 rounded-[20px] transition-all duration-500 active:scale-[0.97] shadow-[0_15px_30px_rgba(255,255,255,0.1)] border border-white/20 flex items-center gap-3 group"
                                 >
-                                    Kayıt Ol
+                                    <div className="w-8 h-8 bg-black/5 rounded-xl flex items-center justify-center group-hover:bg-black/10 transition-all duration-300">
+                                        <Sparkles size={16} className="text-orange-500 animate-pulse" />
+                                    </div>
+                                    <span className="font-[family-name:var(--font-outfit)] text-sm tracking-tight">Ücretsiz Başla</span>
                                 </Button>
                             </>
                         )}
@@ -98,8 +92,11 @@ export default function LandingPage() {
                         {user ? (
                             <Link href="/dashboard">
                                 <Button
-                                    className="bg-orange-500 hover:bg-orange-600 text-white font-black px-10 py-7 text-lg rounded-2xl shadow-[0_20px_40px_rgba(249,115,22,0.3)] hover:shadow-[0_25px_50px_rgba(249,115,22,0.4)] transition-all duration-500 flex items-center gap-3 group active:scale-95"
+                                    className="bg-white hover:bg-zinc-100 text-black font-black px-10 py-7 text-lg rounded-2xl shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.15)] transition-all duration-500 flex items-center gap-3 group active:scale-95 border border-white/20"
                                 >
+                                    <div className="w-8 h-8 bg-black/5 rounded-xl flex items-center justify-center group-hover:bg-black/10 transition-all duration-300">
+                                        <LayoutDashboard size={20} className="text-black" />
+                                    </div>
                                     Dashboard'a Dön
                                     <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                                 </Button>

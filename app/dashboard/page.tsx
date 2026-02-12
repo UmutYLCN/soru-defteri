@@ -262,7 +262,7 @@ export default function Dashboard() {
 
       {/* Premium Floating Header - Brand Colors */}
       <header className="fixed top-8 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-6xl">
-        <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[32px] px-8 py-3.5 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 group cursor-pointer">
               <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
@@ -293,12 +293,12 @@ export default function Dashboard() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all duration-300 ${showUserMenu
+                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border transition-all duration-500 ${showUserMenu
                   ? 'bg-white/10 border-white/20 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]'
-                  : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white'
+                  : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white hover:bg-white/5'
                   }`}
               >
-                <div className="w-8 h-8 rounded-lg bg-orange-500 overflow-hidden flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-orange-500 overflow-hidden flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform duration-500">
                   {user?.user_metadata?.avatar_url ? (
                     <img
                       src={user.user_metadata.avatar_url}
@@ -320,8 +320,8 @@ export default function Dashboard() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline max-w-[100px] truncate">
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Hesabım'}
+                <span className="text-[11px] font-black uppercase tracking-widest hidden sm:inline max-w-[100px] truncate font-[family-name:var(--font-outfit)] text-white/90">
+                  {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Hesabım'}
                 </span>
               </button>
 
@@ -991,7 +991,12 @@ function QuestionTextDisplay({ text }: { text: string }) {
   if (!text) return null;
 
   // Normalize escaped dollars
-  const normalizedText = text.replace(/\\\$/g, '$')
+  let normalizedText = text.replace(/\\\$/g, '$')
+
+  // Handle 'ext' common mistake/alias
+  normalizedText = normalizedText.replace(/\\ext\b/g, '\\text')
+  normalizedText = normalizedText.replace(/(\d+)ext([a-zA-Z/]+)/g, '$1\\text{$2}')
+  normalizedText = normalizedText.replace(/ext\{/g, '\\text{')
 
   // Regex to match $...$ or $$...$$
   const parts = normalizedText.split(/(\$\$[\s\S]*?\$\$|\$.*?\$)/g)

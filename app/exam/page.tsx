@@ -87,7 +87,7 @@ function ExamContent() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                    <Loader2 className="w-12 h-12 text-white animate-spin" />
                     <p className="text-zinc-500 font-black tracking-widest uppercase text-xs">Sorular Hazırlanıyor...</p>
                 </div>
             </div>
@@ -120,8 +120,8 @@ function ExamContent() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="max-w-2xl w-full bg-[#0c0c0e] border border-white/10 p-12 rounded-[40px] text-center shadow-2xl relative overflow-hidden"
                 >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-transparent" />
-                    <Trophy className="w-20 h-20 text-orange-500 mx-auto mb-8 drop-shadow-[0_0_15px_rgba(249,115,22,0.4)]" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white to-transparent" />
+                    <Trophy className="w-20 h-20 text-white mx-auto mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
                     <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter">Sınav Tamamlandı!</h2>
                     <p className="text-zinc-500 font-bold mb-12 uppercase tracking-widest text-xs">Performans Analizin</p>
 
@@ -136,7 +136,7 @@ function ExamContent() {
                         </div>
                         <div className="bg-white/[0.03] p-6 rounded-3xl border border-white/5">
                             <span className="block text-zinc-600 text-[10px] font-black uppercase mb-1">Başarı</span>
-                            <span className="text-3xl font-black text-orange-500">%{stats.percentage}</span>
+                            <span className="text-3xl font-black text-white">%{stats.percentage}</span>
                         </div>
                     </div>
 
@@ -149,7 +149,7 @@ function ExamContent() {
                             TEKRAR DENE
                         </Button>
                         <Link href="/dashboard" className="flex-1">
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-7 rounded-2xl shadow-xl shadow-orange-950/20 border-0 flex items-center justify-center gap-3">
+                            <Button className="w-full bg-white hover:bg-zinc-200 text-white font-black py-7 rounded-2xl shadow-xl shadow-zinc-950/50 border-0 flex items-center justify-center gap-3">
                                 <Home size={20} />
                                 ANA SAYFA
                             </Button>
@@ -178,7 +178,7 @@ function ExamContent() {
                     <div>
                         <h1 className="text-lg font-black tracking-tighter uppercase tracking-[0.2em] text-white">Sınav Modu</h1>
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Canlı Oturum</span>
                         </div>
                     </div>
@@ -187,7 +187,7 @@ function ExamContent() {
                 <div className="flex items-center gap-8">
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest leading-none mb-1">İlerleme</span>
-                        <span className="text-xl font-black text-orange-500 leading-none">{currentIndex + 1} / {questions.length}</span>
+                        <span className="text-xl font-black text-white leading-none">{currentIndex + 1} / {questions.length}</span>
                     </div>
                     <div className="h-10 w-px bg-white/10" />
                     <Button
@@ -211,7 +211,7 @@ function ExamContent() {
                         {/* Question Content Card */}
                         <div className="bg-[#0c0c0e]/80 border border-white/[0.05] p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8">
                             <div className="flex items-center justify-between">
-                                <span className="inline-block px-4 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-[10px] font-black text-orange-500 uppercase tracking-widest">Soru #{currentIndex + 1}</span>
+                                <span className="inline-block px-4 py-1.5 bg-white/10 border border-white/20 rounded-full text-[10px] font-black text-white uppercase tracking-widest">Soru #{currentIndex + 1}</span>
                             </div>
 
                             <div className="text-xl md:text-2xl font-medium leading-relaxed text-zinc-100">
@@ -238,7 +238,7 @@ function ExamContent() {
                                         else if (isSelected) stateStyles = "bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.1)] opacity-100"
                                         else stateStyles = "bg-zinc-900/20 border-white/5 text-zinc-600 opacity-60"
                                     } else if (isSelected) {
-                                        stateStyles = "bg-orange-500/10 border-orange-500 text-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.1)]"
+                                        stateStyles = "bg-white/10 border-white text-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                                     }
 
                                     return (
@@ -275,7 +275,7 @@ function ExamContent() {
                             {currentIndex === questions.length - 1 && isAnswered ? (
                                 <Button
                                     onClick={() => setExamFinished(true)}
-                                    className="bg-orange-500 hover:bg-orange-600 text-white shadow-xl shadow-orange-500/20 px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-0 active:scale-95 transition-all"
+                                    className="bg-white hover:bg-zinc-200 text-white shadow-xl shadow-white/20 px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-0 active:scale-95 transition-all"
                                 >
                                     SINAVI TAMAMLA <Trophy className="ml-2 w-4 h-4" />
                                 </Button>
@@ -296,8 +296,8 @@ function ExamContent() {
                 <div className="hidden min-[1100px]:flex w-[450px] border-l border-white/5 bg-[#080809] p-8 flex-col gap-6 relative z-10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                                <PencilLine className="text-orange-500 w-5 h-5" />
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                                <PencilLine className="text-white w-5 h-5" />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black uppercase tracking-widest text-white">Çözüm Alanı</h3>
@@ -318,7 +318,7 @@ export default function ExamPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                <Loader2 className="w-12 h-12 text-white animate-spin" />
             </div>
         }>
             <ExamContent />

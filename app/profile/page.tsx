@@ -132,7 +132,7 @@ export default function ProfilePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Yükleniyor...</p>
                 </div>
             </div>
@@ -172,7 +172,7 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-black text-white">
             {/* Background */}
             <div className="fixed inset-0 z-0">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_60%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.08),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
             </div>
 
@@ -188,10 +188,10 @@ export default function ProfilePage() {
 
                 {/* Profile Header */}
                 <div className="bg-[#0c0c0e] rounded-[32px] border border-white/[0.05] p-8 mb-6 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
                     <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-2xl bg-orange-500 flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(249,115,22,0.3)]">
+                        <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(255,255,255,0.3)]">
                             {authUser?.user_metadata?.avatar_url ? (
                                 <img
                                     src={authUser.user_metadata.avatar_url}
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="bg-[#0c0c0e] rounded-[24px] border border-white/[0.05] p-5">
                         <div className="flex items-center gap-2 mb-3">
-                            <Zap className="w-4 h-4 text-orange-500" />
+                            <Zap className="w-4 h-4 text-white" />
                             <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Kalan Kredi</span>
                         </div>
                         <div className="text-3xl font-black text-white">{profile.credits}</div>
@@ -251,9 +251,9 @@ export default function ProfilePage() {
 
                     <div
                         onClick={fetchLeaderboard}
-                        className="bg-[#0c0c0e] rounded-[24px] border border-white/[0.05] p-5 cursor-pointer hover:border-orange-500/30 transition-all group relative overflow-hidden"
+                        className="bg-[#0c0c0e] rounded-[24px] border border-white/[0.05] p-5 cursor-pointer hover:border-white/30 transition-all group relative overflow-hidden"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex items-center gap-2 mb-3">
                             <Trophy className="w-4 h-4 text-amber-500" />
                             <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Sıralama</span>
@@ -291,21 +291,21 @@ export default function ProfilePage() {
                             <div className="p-4 max-h-[400px] overflow-y-auto space-y-2">
                                 {loadingLeaderboard ? (
                                     <div className="py-20 flex flex-col items-center gap-4">
-                                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     </div>
                                 ) : (
                                     leaderboardData.map((user, index) => (
                                         <div
                                             key={user.id}
                                             className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${user.id === profile.id
-                                                ? 'bg-orange-500/10 border-orange-500/20'
+                                                ? 'bg-white/10 border-white/20'
                                                 : 'bg-white/[0.02] border-transparent hover:border-white/10'
                                                 }`}
                                         >
                                             <div className="w-8 flex justify-center">
                                                 {index === 0 ? <Medal className="w-5 h-5 text-amber-400" /> :
                                                     index === 1 ? <Medal className="w-5 h-5 text-zinc-400" /> :
-                                                        index === 2 ? <Medal className="w-5 h-5 text-orange-400" /> :
+                                                        index === 2 ? <Medal className="w-5 h-5 text-zinc-400" /> :
                                                             <span className="text-xs font-black text-zinc-600">#{index + 1}</span>
                                                 }
                                             </div>
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                                                 {user.image ? (
                                                     <img src={user.image} alt="" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-orange-500 text-white font-black text-sm">
+                                                    <div className="w-full h-full flex items-center justify-center bg-white text-white font-black text-sm">
                                                         {(user.name || 'U').charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-white truncate">
                                                     {user.name || 'Gizli Kullanıcı'}
-                                                    {user.id === profile.id && <span className="ml-2 text-[10px] text-orange-500 uppercase font-black">(Sen)</span>}
+                                                    {user.id === profile.id && <span className="ml-2 text-[10px] text-white uppercase font-black">(Sen)</span>}
                                                 </p>
                                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{user.subscriptionPlan} ÜYE</p>
                                             </div>
@@ -400,7 +400,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
                         <button
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:shadow-[0_0_30px_rgba(249,115,22,0.3)] transition-all duration-300 active:scale-[0.97]"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-white to-amber-500 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all duration-300 active:scale-[0.97]"
                             onClick={() => {/* Polar checkout will go here */ }}
                         >
                             Planı Yükselt

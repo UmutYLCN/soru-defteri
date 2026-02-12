@@ -15,10 +15,14 @@ export function MathText({ text, className }: MathTextProps) {
     let processedText = text.replace(/\\\$/g, '$')
     // Convert literal \n to actual newlines
     processedText = processedText.replace(/\\n/g, '\n')
+    // Handle 'ext' common mistake/alias
+    processedText = processedText.replace(/\\ext\b/g, '\\text')
+    processedText = processedText.replace(/(\d+)ext([a-zA-Z/]+)/g, '$1\\text{$2}')
+    processedText = processedText.replace(/ext\{/g, '\\text{')
 
     // If the text has no $ delimiters at all but contains LaTeX commands, wrap them
     if (!processedText.includes('$') && !processedText.includes('\\(') && !processedText.includes('\\[')) {
-        const latexPattern = /\\(?:frac|sqrt|sum|prod|int|lim|vec|hat|bar|dot|ddot|overline|underline|mathbf|mathrm|text|left|right|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|sim|propto|infty|partial|nabla|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega)\b/
+        const latexPattern = /\\(?:frac|sqrt|sum|prod|int|lim|vec|hat|bar|dot|ddot|overline|underline|mathbf|mathrm|text|ext|left|right|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|sim|propto|infty|partial|nabla|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega)\b/
         if (latexPattern.test(processedText)) {
             // Wrap contiguous LaTeX segments (commands + braces + operators)
             processedText = processedText.replace(
