@@ -58,12 +58,9 @@ export default function LandingPage() {
                                 </button>
                                 <Button
                                     onClick={openRegister}
-                                    className="bg-white hover:bg-zinc-100 text-black font-black px-6 py-2.5 rounded-[20px] transition-all duration-500 active:scale-[0.97] shadow-[0_15px_30px_rgba(255,255,255,0.1)] border border-white/20 flex items-center gap-3 group"
+                                    className="bg-white hover:bg-zinc-100 text-black font-black px-8 py-2.5 rounded-[20px] transition-all duration-500 active:scale-[0.97] shadow-[0_15px_30px_rgba(255,255,255,0.1)] border border-white/20"
                                 >
-                                    <div className="w-8 h-8 bg-black/5 rounded-xl flex items-center justify-center group-hover:bg-black/10 transition-all duration-300">
-                                        <Sparkles size={16} className="text-orange-500 animate-pulse" />
-                                    </div>
-                                    <span className="font-[family-name:var(--font-outfit)] text-sm tracking-tight">Ücretsiz Başla</span>
+                                    <span className="font-[family-name:var(--font-outfit)] text-sm tracking-tight">Kayıt Ol</span>
                                 </Button>
                             </>
                         )}
@@ -104,13 +101,16 @@ export default function LandingPage() {
                         ) : (
                             <Button
                                 onClick={openRegister}
-                                className="bg-orange-500 hover:bg-orange-600 text-white font-black px-10 py-7 text-lg rounded-2xl shadow-[0_20px_40px_rgba(249,115,22,0.3)] hover:shadow-[0_25px_50px_rgba(249,115,22,0.4)] transition-all duration-500 flex items-center gap-3 group active:scale-95"
+                                className="bg-white hover:bg-zinc-100 text-black font-black px-10 py-7 text-lg rounded-2xl shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.15)] transition-all duration-500 flex items-center gap-3 group active:scale-95 border border-white/20"
                             >
-                                Şimdi Başla
+                                Ücretsiz Dene
                                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                             </Button>
                         )}
-                        <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5 font-bold px-10 py-7 text-lg rounded-2xl transition-all duration-300">
+                        <Button
+                            variant="outline"
+                            className="bg-zinc-900/50 hover:bg-zinc-800/80 text-white border-zinc-800 hover:border-zinc-700 font-bold px-10 py-7 text-lg rounded-2xl transition-all duration-300 backdrop-blur-xl"
+                        >
                             Demo İzle
                         </Button>
                     </div>
