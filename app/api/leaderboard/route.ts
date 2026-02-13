@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -14,31 +13,30 @@ export async function GET() {
         }
 
         // Top 10 users by totalCreditsUsed
-        const leaderboard = await prisma.user.findMany({
-            take: 10,
-            orderBy: {
-                totalCreditsUsed: 'desc'
-            },
-            select: {
-                id: true,
-                name: true,
-                image: true,
-                totalCreditsUsed: true,
-                subscriptionPlan: true
-            }
-        })
+        const { data: leaderboard, error: leaderboardError } = await supabase
+            .from('User')
+            .select('id, name, image, totalCreditsUsed, subscriptionPlan')
+            .order('totalCreditsUsed', { ascending: false })
+            .limit(10)
+
+        if (leaderboardError) throw leaderboardError
 
         // Find current user's rank
-        const allUsers = await prisma.user.findMany({
-            orderBy: {
-                totalCreditsUsed: 'desc'
-            },
-            select: {
-                id: true
-            }
-        })
+        // Rank is count of users with more totalCreditsUsed + 1
+        const { data: currentUser } = await supabase
+            .from('User')
+            .select('totalCreditsUsed')
+            .eq('id', user.id)
+            .single()
 
-        const userRank = allUsers.findIndex(u => u.id === user.id) + 1
+        const { count: rankCount, error: rankError } = await supabase
+            .from('User')
+            .select('*', { count: 'exact', head: true })
+            .gt('totalCreditsUsed', currentUser?.totalCreditsUsed || 0)
+
+        if (rankError) throw rankError
+
+        const userRank = (rankCount || 0) + 1
 
         return NextResponse.json({
             leaderboard,

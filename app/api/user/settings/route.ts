@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import { prisma } from '@/lib/prisma'
 
 export async function PATCH(request: Request) {
     try {
@@ -19,14 +18,14 @@ export async function PATCH(request: Request) {
             updateData.preferredLanguage = preferredLanguage
         }
 
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: updateData,
-            select: {
-                id: true,
-                preferredLanguage: true,
-            }
-        })
+        const { data: updatedUser, error } = await supabase
+            .from('User')
+            .update(updateData)
+            .eq('id', user.id)
+            .select('id, preferredLanguage')
+            .single()
+
+        if (error) throw error
 
         return NextResponse.json(updatedUser)
     } catch (error) {

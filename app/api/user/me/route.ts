@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { ensureUserExists } from '@/lib/user'
-import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,22 +14,39 @@ export async function GET() {
         }
 
         // Kullanıcıyı oluştur veya güncelle
-        const syncedUser = await ensureUserExists(user)
+        let syncedUser;
+        try {
+            syncedUser = await ensureUserExists(user)
+        } catch (syncError: any) {
+            console.error('API /api/user/me: Sync failed:', syncError)
+            return NextResponse.json({
+                error: 'Sync Failed',
+                message: syncError?.message || 'Failed to sync user with database'
+            }, { status: 500 })
+        }
 
-        // Eğer ensureUserExists null dönerse (hata aldıysa) manuel çekmeyi dene
-        const dbUser = await prisma.user.findUnique({
-            where: { id: user.id }
-        })
+        console.log('API /api/user/me: Sync result:', syncedUser ? 'Success' : 'Failed')
 
-        if (!dbUser) {
-            return NextResponse.json({ error: 'User could not be created or found' }, { status: 404 })
+        // Veritabanından kullanıcıyı çek
+        const { data: dbUser, error } = await supabase
+            .from('User')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+
+        if (error || !dbUser) {
+            console.error('API /api/user/me: User not found in database', { error, userId: user.id })
+            return NextResponse.json({
+                error: 'User not found',
+                message: error?.message || 'User could not be created or found in data store'
+            }, { status: 404 })
         }
 
         return NextResponse.json(dbUser)
     } catch (error: any) {
         console.error('API Error /api/user/me:', error)
         return NextResponse.json({
-            error: 'Failed to fetch user',
+            error: 'Internal Server Error',
             message: error?.message || 'Unknown error'
         }, { status: 500 })
     }

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { generate } from '@/lib/gemini'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -25,33 +24,34 @@ export async function POST(req: Request) {
         const generatedQuestions = await generate(prompt, image, questionType || 'Karışık', count, originalImage)
 
         // Save to database
-        const savedQuestions = await Promise.all(
-            generatedQuestions.map((q: any) =>
-                prisma.question.create({
-                    data: {
-                        userId: user.id,
-                        questionText: q.questionText,
-                        optionA: q.optionA,
-                        optionB: q.optionB,
-                        optionC: q.optionC,
-                        optionD: q.optionD,
-                        correctAnswer: q.correctAnswer,
-                        solution: q.solution,
-                        imageUrl: q.imageUrl,
-                        // English translations
-                        questionTextEN: q.questionTextEN,
-                        optionAEN: q.optionAEN,
-                        optionBEN: q.optionBEN,
-                        optionCEN: q.optionCEN,
-                        optionDEN: q.optionDEN,
-                        solutionEN: q.solutionEN,
-                        categoryId: categoryId ? parseInt(categoryId) : null,
-                    },
-                })
-            )
-        )
+        const questionsToSave = generatedQuestions.map((q: any) => ({
+            userId: user.id,
+            questionText: q.questionText,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+            correctAnswer: q.correctAnswer,
+            solution: q.solution,
+            imageUrl: q.imageUrl,
+            // English translations
+            questionTextEN: q.questionTextEN,
+            optionAEN: q.optionAEN,
+            optionBEN: q.optionBEN,
+            optionCEN: q.optionCEN,
+            optionDEN: q.optionDEN,
+            solutionEN: q.solutionEN,
+            categoryId: categoryId ? parseInt(categoryId) : null,
+        }))
 
-        return NextResponse.json({ success: true, count: savedQuestions.length })
+        const { data: savedQuestions, error } = await supabase
+            .from('Question')
+            .insert(questionsToSave)
+            .select()
+
+        if (error) throw error
+
+        return NextResponse.json({ success: true, count: savedQuestions?.length || 0 })
     } catch (error: any) {
         console.error('Error in /api/generate:', error)
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })

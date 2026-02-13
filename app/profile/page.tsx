@@ -62,7 +62,7 @@ export default function ProfilePage() {
                 }
                 setAuthUser(user)
 
-                const res = await fetch('/api/user/me')
+                const res = await fetch('/api/user/me', { cache: 'no-store' })
                 if (!res.ok) {
                     const errData = await res.json()
                     throw new Error(errData.message || errData.error || 'Profil verisi alınamadı')

@@ -19,35 +19,19 @@
 | **UI Framework** | React |
 | **Styling** | TailwindCSS |
 | **Component Library** | Shadcn/UI |
-| **Database** | SQLite + Prisma |
-| **PDF** | jsPDF veya react-pdf |
+| **Database** | Supabase (PostgreSQL) |
+| **Authentication** | Supabase Auth |
+| **PDF** | jsPDF |
 
 ---
 
-## 📊 Veritabanı Şeması
+## 📊 Veritabanı Şeması (Supabase)
 
-```sql
--- Kategoriler/Konular
-CREATE TABLE categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Sorular
-CREATE TABLE questions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category_id INTEGER,
-  question_text TEXT NOT NULL,
-  option_a TEXT NOT NULL,
-  option_b TEXT NOT NULL,
-  option_c TEXT NOT NULL,
-  option_d TEXT NOT NULL,
-  correct_answer CHAR(1) NOT NULL CHECK(correct_answer IN ('A', 'B', 'C', 'D')),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id)
-);
-```
+Tablolar Supabase üzerinden PostgreSQL ile yönetilmektedir. Temel tablolar:
+- `User`: Kullanıcı profili ve kredi bilgileri.
+- `Category`: Soru kategorileri.
+- `Question`: Soru metinleri ve seçenekler.
+- `QuestionGroup`: Çoklu soru grupları.
 
 ---
 
@@ -135,14 +119,13 @@ PDF dosyası şu şekilde oluşturulacak:
 
 ---
 
-## 📦 Kurulum (Planlanan)
+## 📦 Kurulum
 
 ```bash
 # Bağımlılıkları yükle
 npm install
 
-# Veritabanını oluştur
-npx prisma db push
+# .env dosyasını Supabase bilgileriyle doldurun
 
 # Geliştirme sunucusunu başlat
 npm run dev
@@ -152,12 +135,8 @@ npm run dev
 
 ## 🔜 Sonraki Adımlar
 
-1. Next.js projesi oluşturma
-2. Prisma + SQLite kurulumu
-3. Shadcn/UI komponentleri ekleme
-4. Soru ekleme formu
-5. CSV içe aktarma özelliği
-6. PDF oluşturma (jspdf ile)
+2. Ödeme entegrasyonu
+3. Gelişmiş AI soru türetme senaryoları
 
 ---
 

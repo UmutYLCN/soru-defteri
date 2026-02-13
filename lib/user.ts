@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase-server'
 
 /**
  * Supabase Auth kullanıcısını local User tablosunda senkronize eder.
@@ -14,74 +14,59 @@ export async function ensureUserExists(authUser: {
 }) {
     if (!authUser?.id) return null
 
+    const supabase = await createClient()
     const email = authUser.email || ''
     const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || null
     const image = authUser.user_metadata?.avatar_url || null
 
-    try {
-        // 1. Önce ID ile ara
-        const existingUserById = await prisma.user.findUnique({
-            where: { id: authUser.id }
-        })
+    // Attempt to upsert the user record
+    // This is more robust than select-then-insert/update
+    const now = new Date().toISOString()
+    const { data: user, error } = await supabase
+        .from('User')
+        .upsert({
+            id: authUser.id,
+            email,
+            name,
+            image,
+            lastLoginAt: now,
+            updatedAt: now, // Satisfy NOT NULL constraint
+        }, { onConflict: 'id' })
+        .select()
+        .single()
 
-        if (existingUserById) {
-            // ID bulundu, bilgilerini güncelle
-            return await prisma.user.update({
-                where: { id: authUser.id },
-                data: {
-                    email,
-                    name,
-                    image,
-                    lastLoginAt: new Date()
-                }
-            })
+    if (error) {
+        console.error('ensureUserExists failed:', error)
+
+        // If it's a "column does not exist" error, it might be because of naming
+        if (error.message.includes('column') || error.message.includes('relation')) {
+            throw new Error(`Database Schema Error: ${error.message}`)
         }
 
-        // 2. ID bulunamadı, Email ile ara (ID değişmiş olabilir)
-        const existingUserByEmail = await prisma.user.findUnique({
-            where: { email }
-        })
+        // Try a simple select to see if user exists at least
+        const { data: existing } = await supabase
+            .from('User')
+            .select('*')
+            .eq('id', authUser.id)
+            .single()
 
-        if (existingUserByEmail) {
-            // Email bulundu ama ID farklı. ID'yi güncelle ki Supabase ile uyumlu olsun.
-            // Bu sayede kullanıcının eski verileri (soruları, kredileri vb.) korunur.
-            return await prisma.user.update({
-                where: { email },
-                data: {
-                    id: authUser.id,
-                    name,
-                    image,
-                    lastLoginAt: new Date()
-                }
-            })
-        }
+        if (existing) return existing
 
-        // 3. Hiç bulunamadı, yeni oluştur
-        return await prisma.user.create({
-            data: {
-                id: authUser.id,
-                email,
-                name,
-                image,
-                credits: 10,
-                subscriptionPlan: 'FREE',
-                subscriptionStatus: 'ACTIVE',
-                preferredLanguage: 'tr',
-                lastLoginAt: new Date()
-            }
-        })
-    } catch (error) {
-        console.error('CRITICAL: ensureUserExists failed!', error)
-        return null
+        throw error
     }
+
+    return user
 }
 
 export async function hasCredits(userId: string, amount: number = 1): Promise<boolean> {
     try {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { credits: true }
-        })
+        const supabase = await createClient()
+        const { data: user } = await supabase
+            .from('User')
+            .select('credits')
+            .eq('id', userId)
+            .single()
+
         return (user?.credits ?? 0) >= amount
     } catch {
         return false
@@ -90,13 +75,27 @@ export async function hasCredits(userId: string, amount: number = 1): Promise<bo
 
 export async function consumeCredits(userId: string, amount: number = 1) {
     try {
-        return await prisma.user.update({
-            where: { id: userId },
-            data: {
-                credits: { decrement: amount },
-                totalCreditsUsed: { increment: amount },
-            },
-        })
+        const supabase = await createClient()
+
+        // Supabase update doesnt have atomic increment/decrement easily via JS client
+        // Fetch current credits first (or use an RPC if defined in Supabase)
+        const { data: user } = await supabase
+            .from('User')
+            .select('credits, totalCreditsUsed')
+            .eq('id', userId)
+            .single()
+
+        if (!user) return null
+
+        return await supabase
+            .from('User')
+            .update({
+                credits: (user.credits || 0) - amount,
+                totalCreditsUsed: (user.totalCreditsUsed || 0) + amount,
+            })
+            .eq('id', userId)
+            .select()
+            .single()
     } catch (error) {
         console.error('consumeCredits failed:', error)
     }

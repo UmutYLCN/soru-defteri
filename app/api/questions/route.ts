@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 import { ensureUserExists } from '@/lib/user'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
@@ -15,20 +16,21 @@ export async function GET() {
         // Kullanıcı kaydını senkronize et
         await ensureUserExists(user)
 
-        const questions = await prisma.question.findMany({
-            where: {
-                userId: user.id
-            },
-            include: {
-                category: true,
-                group: true
-            },
-            orderBy: { createdAt: 'desc' }
-        })
+        const { data: questions, error } = await supabase
+            .from('Question')
+            .select('*, category:Category(*), group:QuestionGroup(*)')
+            .eq('userId', user.id)
+            .order('createdAt', { ascending: false })
+
+        if (error) throw error
+
         return NextResponse.json(questions)
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching questions:', error)
-        return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 })
+        return NextResponse.json({
+            error: 'Failed to fetch questions',
+            message: error?.message || 'Unknown error'
+        }, { status: 500 })
     }
 }
 
@@ -53,8 +55,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Correct answer must be A, B, C, or D' }, { status: 400 })
         }
 
-        const question = await prisma.question.create({
-            data: {
+        const { data: question, error } = await supabase
+            .from('Question')
+            .insert({
                 userId: user.id,
                 categoryId: categoryId ? parseInt(String(categoryId)) : null,
                 questionText: String(questionText).trim(),
@@ -64,11 +67,11 @@ export async function POST(request: Request) {
                 optionD: String(optionD).trim(),
                 correctAnswer: String(correctAnswer).toUpperCase(),
                 solution: solution?.trim() || null
-            },
-            include: {
-                category: true
-            }
-        })
+            })
+            .select('*, category:Category(*)')
+            .single()
+
+        if (error) throw error
 
         return NextResponse.json(question, { status: 201 })
     } catch (error) {
@@ -98,18 +101,23 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Invalid Question ID' }, { status: 400 })
         }
 
-        // Verify ownership
-        const question = await prisma.question.findUnique({
-            where: { id: questionId }
-        })
+        // Verify ownership and delete
+        const { data: question, error: fetchError } = await supabase
+            .from('Question')
+            .select('userId')
+            .eq('id', questionId)
+            .single()
 
-        if (!question || question.userId !== user.id) {
-            return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+        if (fetchError || !question || question.userId !== user.id) {
+            return NextResponse.json({ error: 'Permission denied or not found' }, { status: 403 })
         }
 
-        await prisma.question.delete({
-            where: { id: questionId }
-        })
+        const { error: deleteError } = await supabase
+            .from('Question')
+            .delete()
+            .eq('id', questionId)
+
+        if (deleteError) throw deleteError
 
         return NextResponse.json({ success: true })
     } catch (error) {
@@ -149,17 +157,19 @@ export async function PUT(request: Request) {
         }
 
         // Verify ownership
-        const existingQuestion = await prisma.question.findUnique({
-            where: { id: questionId }
-        })
+        const { data: existingQuestion, error: fetchError } = await supabase
+            .from('Question')
+            .select('userId')
+            .eq('id', questionId)
+            .single()
 
-        if (!existingQuestion || existingQuestion.userId !== user.id) {
-            return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+        if (fetchError || !existingQuestion || existingQuestion.userId !== user.id) {
+            return NextResponse.json({ error: 'Permission denied or not found' }, { status: 403 })
         }
 
-        const question = await prisma.question.update({
-            where: { id: questionId },
-            data: {
+        const { data: question, error: updateError } = await supabase
+            .from('Question')
+            .update({
                 categoryId: categoryId ? parseInt(String(categoryId)) : null,
                 questionText: String(questionText).trim(),
                 optionA: String(optionA).trim(),
@@ -168,11 +178,12 @@ export async function PUT(request: Request) {
                 optionD: String(optionD).trim(),
                 correctAnswer: String(correctAnswer).toUpperCase(),
                 solution: solution?.trim() || null
-            },
-            include: {
-                category: true
-            }
-        })
+            })
+            .eq('id', questionId)
+            .select('*, category:Category(*)')
+            .single()
+
+        if (updateError) throw updateError
 
         return NextResponse.json(question)
     } catch (error) {

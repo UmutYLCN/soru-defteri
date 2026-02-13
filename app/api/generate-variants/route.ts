@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { generateVariants } from '@/lib/gemini'
 import { createClient } from '@/lib/supabase-server'
 
@@ -25,12 +24,13 @@ export async function POST(request: Request) {
         }
 
         // Fetch the original question
-        const originalQuestion = await prisma.question.findUnique({
-            where: { id: questionId },
-            include: { category: true }
-        })
+        const { data: originalQuestion, error: fetchError } = await supabase
+            .from('Question')
+            .select('*, Category(*)')
+            .eq('id', questionId)
+            .single()
 
-        if (!originalQuestion) {
+        if (fetchError || !originalQuestion) {
             return NextResponse.json({ error: 'Question not found' }, { status: 404 })
         }
 
@@ -57,34 +57,34 @@ export async function POST(request: Request) {
         }, count)
 
         // Save all variants to the database under the same category
-        const savedVariants = await Promise.all(
-            variants.map((variant: any) =>
-                prisma.question.create({
-                    data: {
-                        userId: user.id,
-                        questionText: variant.questionText,
-                        optionA: variant.optionA,
-                        optionB: variant.optionB,
-                        optionC: variant.optionC,
-                        optionD: variant.optionD,
-                        correctAnswer: variant.correctAnswer,
-                        solution: variant.solution || null,
-                        questionTextEN: variant.questionTextEN || null,
-                        optionAEN: variant.optionAEN || null,
-                        optionBEN: variant.optionBEN || null,
-                        optionCEN: variant.optionCEN || null,
-                        optionDEN: variant.optionDEN || null,
-                        solutionEN: variant.solutionEN || null,
-                        imageUrl: originalQuestion.imageUrl,
-                        categoryId: originalQuestion.categoryId,
-                    },
-                    include: { category: true }
-                })
-            )
-        )
+        const variantsToSave = variants.map((variant: any) => ({
+            userId: user.id,
+            questionText: variant.questionText,
+            optionA: variant.optionA,
+            optionB: variant.optionB,
+            optionC: variant.optionC,
+            optionD: variant.optionD,
+            correctAnswer: variant.correctAnswer,
+            solution: variant.solution || null,
+            questionTextEN: variant.questionTextEN || null,
+            optionAEN: variant.optionAEN || null,
+            optionBEN: variant.optionBEN || null,
+            optionCEN: variant.optionCEN || null,
+            optionDEN: variant.optionDEN || null,
+            solutionEN: variant.solutionEN || null,
+            imageUrl: originalQuestion.imageUrl,
+            categoryId: originalQuestion.categoryId,
+        }))
+
+        const { data: savedVariants, error: insertError } = await supabase
+            .from('Question')
+            .insert(variantsToSave)
+            .select('*, category:Category(*)')
+
+        if (insertError) throw insertError
 
         return NextResponse.json({
-            message: `${savedVariants.length} variant(s) created successfully`,
+            message: `${savedVariants?.length || 0} variant(s) created successfully`,
             variants: savedVariants
         })
     } catch (error: any) {

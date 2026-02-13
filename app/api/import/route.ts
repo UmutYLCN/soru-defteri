@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 
 interface CSVRow {
@@ -100,13 +99,26 @@ export async function POST(request: Request) {
         const categoryMap: Record<string, number> = {}
 
         for (const name of categoryNames) {
-            let category = await prisma.category.findUnique({
-                where: { name_userId: { name, userId: user.id } }
-            })
+            let { data: category } = await supabase
+                .from('Category')
+                .select('id')
+                .eq('name', name)
+                .eq('userId', user.id)
+                .single()
+
             if (!category) {
-                category = await prisma.category.create({ data: { name, userId: user.id } })
+                const { data: newCat, error: catError } = await supabase
+                    .from('Category')
+                    .insert({ name, userId: user.id })
+                    .select()
+                    .single()
+
+                if (newCat) category = newCat
             }
-            categoryMap[name] = category.id
+
+            if (category) {
+                categoryMap[name] = category.id
+            }
         }
 
         // Create questions
@@ -132,8 +144,9 @@ export async function POST(request: Request) {
             }
 
             try {
-                await prisma.question.create({
-                    data: {
+                const { error: insertError } = await supabase
+                    .from('Question')
+                    .insert({
                         userId: user.id,
                         categoryId: row.category ? categoryMap[row.category] : null,
                         questionText: row.question_text,
@@ -143,8 +156,9 @@ export async function POST(request: Request) {
                         optionD: row.option_d,
                         correctAnswer,
                         solution: row.solution || null
-                    }
-                })
+                    })
+
+                if (insertError) throw insertError
                 successCount++
             } catch {
                 errors.push(`Satır ${i + 2}: Veritabanı hatası`)

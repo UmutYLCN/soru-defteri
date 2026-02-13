@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 
 export async function DELETE(
@@ -21,12 +20,14 @@ export async function DELETE(
             return NextResponse.json({ error: 'Invalid Question ID' }, { status: 400 })
         }
 
-        // Verify ownership
-        const question = await prisma.question.findUnique({
-            where: { id }
-        })
+        // Verify ownership and delete
+        const { data: question, error: fetchError } = await supabase
+            .from('Question')
+            .select('userId')
+            .eq('id', id)
+            .single()
 
-        if (!question) {
+        if (fetchError || !question) {
             return NextResponse.json({ error: 'Question not found' }, { status: 404 })
         }
 
@@ -34,9 +35,12 @@ export async function DELETE(
             return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
         }
 
-        await prisma.question.delete({
-            where: { id },
-        })
+        const { error: deleteError } = await supabase
+            .from('Question')
+            .delete()
+            .eq('id', id)
+
+        if (deleteError) throw deleteError
 
         return NextResponse.json({ success: true })
     } catch (error: any) {

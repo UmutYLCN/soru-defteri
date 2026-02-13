@@ -89,18 +89,28 @@ export default function Dashboard() {
       }
 
       const [questionsRes, categoriesRes, profileRes] = await Promise.all([
-        fetch('/api/questions'),
-        fetch('/api/categories'),
-        fetch('/api/user/me')
+        fetch('/api/questions', { cache: 'no-store' }),
+        fetch('/api/categories', { cache: 'no-store' }),
+        fetch('/api/user/me', { cache: 'no-store' })
       ])
+
+      if (!questionsRes.ok || !categoriesRes.ok || !profileRes.ok) {
+        console.error(`API Error Status - Questions: ${questionsRes.status}, Categories: ${categoriesRes.status}, Profile: ${profileRes.status}`)
+      }
 
       const questionsData = await questionsRes.json()
       const categoriesData = await categoriesRes.json()
       const profileData = await profileRes.json()
 
+      if (!questionsRes.ok) console.error('Questions API Error:', questionsData.message || questionsData.error)
+      if (!categoriesRes.ok) console.error('Categories API Error:', categoriesData.message || categoriesData.error)
+      if (profileData.error) {
+        console.error('Profile Data Error:', profileData.error, profileData.message)
+      }
+
       setQuestions(Array.isArray(questionsData) ? questionsData : [])
       setCategories(Array.isArray(categoriesData) ? categoriesData : [])
-      setProfile(profileData)
+      setProfile(profileData.error ? null : profileData)
       if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)

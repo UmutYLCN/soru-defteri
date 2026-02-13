@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { generateGroupedQuestions } from '@/lib/gemini'
 import { createClient } from '@/lib/supabase-server'
 
@@ -29,47 +28,51 @@ export async function POST(request: Request) {
         const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage)
 
         // Create the QuestionGroup first
-        const group = await prisma.questionGroup.create({
-            data: {
+        const { data: group, error: groupError } = await supabase
+            .from('QuestionGroup')
+            .insert({
                 stemText: result.stemText,
                 stemTextEN: result.stemTextEN || null,
                 imageUrl: result.imageUrl || null,
                 categoryId: categoryId ? parseInt(categoryId) : null,
                 userId: user.id,
-            }
-        })
+            })
+            .select()
+            .single()
+
+        if (groupError) throw groupError
 
         // Create all sub-questions linked to this group
-        const savedQuestions = await Promise.all(
-            result.questions.map((q: any) =>
-                prisma.question.create({
-                    data: {
-                        userId: user.id,
-                        questionText: q.questionText,
-                        optionA: q.optionA,
-                        optionB: q.optionB,
-                        optionC: q.optionC,
-                        optionD: q.optionD,
-                        correctAnswer: q.correctAnswer,
-                        solution: q.solution || null,
-                        questionTextEN: q.questionTextEN || null,
-                        optionAEN: q.optionAEN || null,
-                        optionBEN: q.optionBEN || null,
-                        optionCEN: q.optionCEN || null,
-                        optionDEN: q.optionDEN || null,
-                        solutionEN: q.solutionEN || null,
-                        categoryId: categoryId ? parseInt(categoryId) : null,
-                        groupId: group.id,
-                    },
-                    include: { category: true }
-                })
-            )
-        )
+        const questionsToSave = result.questions.map((q: any) => ({
+            userId: user.id,
+            questionText: q.questionText,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+            correctAnswer: q.correctAnswer,
+            solution: q.solution || null,
+            questionTextEN: q.questionTextEN || null,
+            optionAEN: q.optionAEN || null,
+            optionBEN: q.optionBEN || null,
+            optionCEN: q.optionCEN || null,
+            optionDEN: q.optionDEN || null,
+            solutionEN: q.solutionEN || null,
+            categoryId: categoryId ? parseInt(categoryId) : null,
+            groupId: group.id,
+        }))
+
+        const { data: savedQuestions, error: questionsError } = await supabase
+            .from('Question')
+            .insert(questionsToSave)
+            .select()
+
+        if (questionsError) throw questionsError
 
         return NextResponse.json({
             success: true,
             groupId: group.id,
-            count: savedQuestions.length
+            count: savedQuestions?.length || 0
         })
     } catch (error: any) {
         console.error('Error generating grouped questions:', error)

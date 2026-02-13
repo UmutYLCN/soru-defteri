@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { processNotebookQuestion } from '@/lib/gemini'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase-server'
 
 interface NotebookQuestion {
@@ -53,8 +52,9 @@ export async function POST(req: Request) {
                 const processed = await processNotebookQuestion(q)
 
                 // Save to database
-                await prisma.question.create({
-                    data: {
+                const { error: insertError } = await supabase
+                    .from('Question')
+                    .insert({
                         userId: user.id,
                         questionText: processed.questionText,
                         optionA: processed.optionA,
@@ -70,8 +70,9 @@ export async function POST(req: Request) {
                         optionDEN: processed.optionDEN,
                         solutionEN: processed.solutionEN,
                         categoryId: categoryId ? parseInt(categoryId) : null,
-                    }
-                })
+                    })
+
+                if (insertError) throw insertError
 
                 results.success++
             } catch (error: any) {
