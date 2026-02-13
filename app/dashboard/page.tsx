@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [pdfThumbnail, setPdfThumbnail] = useState<string | null>(null)
   const [language, setLanguage] = useState<'tr' | 'en'>('tr')
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -87,16 +88,19 @@ export default function Dashboard() {
         setUser(authUser)
       }
 
-      const [questionsRes, categoriesRes] = await Promise.all([
+      const [questionsRes, categoriesRes, profileRes] = await Promise.all([
         fetch('/api/questions'),
-        fetch('/api/categories')
+        fetch('/api/categories'),
+        fetch('/api/user/me')
       ])
 
       const questionsData = await questionsRes.json()
       const categoriesData = await categoriesRes.json()
+      const profileData = await profileRes.json()
 
       setQuestions(Array.isArray(questionsData) ? questionsData : [])
       setCategories(Array.isArray(categoriesData) ? categoriesData : [])
+      setProfile(profileData)
       if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -202,7 +206,7 @@ export default function Dashboard() {
       const url = URL.createObjectURL(pdfBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'NoteDiur_Sorular.pdf'
+      link.download = 'Quesly_Sorular.pdf'
       link.click()
       URL.revokeObjectURL(url)
 
@@ -257,15 +261,10 @@ export default function Dashboard() {
       <header className="fixed top-8 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-6xl">
         <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-4 group cursor-pointer">
-              <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative shadow-[0_0_25px_rgba(249,115,22,0.15)] transition-all duration-300 group-hover:scale-105 group-hover:border-orange-500/30">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                  <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2.5" />
-                  <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-black text-white tracking-tighter">NoteDiur</h1>
+            <Link href="/" className="flex items-center gap-2 group cursor-pointer">
+              <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
+                Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.</span>
+              </h1>
             </Link>
 
 
@@ -280,30 +279,16 @@ export default function Dashboard() {
                   {categories.filter(c => !c.parentId).length}
                 </span>
               </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Soru Hakkı</span>
+                <span className="text-lg text-white font-black leading-none">
+                  {profile?.credits ?? '—'}
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* TR/EN Toggle Premium */}
-            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
-              <button
-                onClick={() => setLanguage('tr')}
-                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'tr'
-                  ? 'bg-white text-black shadow-lg scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-              >
-                TR
-              </button>
-              <button
-                onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'en'
-                  ? 'bg-white text-black shadow-lg scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-              >
-                EN
-              </button>
-            </div>
+
 
             <div className="relative" ref={userMenuRef}>
               <button
@@ -345,7 +330,7 @@ export default function Dashboard() {
                   </button>
 
                   <div className="mt-2 pt-2 border-t border-zinc-800 px-2">
-                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">NoteDiur v1.0</p>
+                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">Quesly v1.0</p>
                   </div>
                 </div>
               )}
@@ -474,7 +459,7 @@ export default function Dashboard() {
 
       <footer className="border-t border-white/5 py-12 mt-20 relative z-10">
         <div className="container mx-auto px-6 text-center text-zinc-600 text-[11px] font-bold uppercase tracking-[0.4em] font-[family-name:var(--font-outfit)]">
-          NoteDiur Premium v1.0 • Built for Excellence
+          Quesly Premium v1.0 • Built for Excellence
         </div>
       </footer>
 
@@ -660,7 +645,7 @@ export default function Dashboard() {
           paddingBottom: '20px'
         }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#111827', letterSpacing: '-0.5px' }}>NOTEDIUR</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#111827', letterSpacing: '-0.5px' }}>QUESLY</h1>
             <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
               {selectedCategory !== 'all' ? categories.find(c => c.id.toString() === selectedCategory)?.name : 'Tüm Kategoriler'}
             </p>
