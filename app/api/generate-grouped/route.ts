@@ -14,8 +14,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        console.log('API Request: /api/generate-grouped');
         const { prompt, subQuestionCount, categoryId, image, originalImage } = await request.json()
+        const questionCount = parseInt(subQuestionCount) || 2
 
         if (!prompt && !image) {
             return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
@@ -23,6 +23,14 @@ export async function POST(request: Request) {
 
         if (!subQuestionCount || subQuestionCount < 2 || subQuestionCount > 5) {
             return NextResponse.json({ error: 'Sub-question count must be between 2 and 5' }, { status: 400 })
+        }
+
+        // Check credits
+        const { hasCredits, consumeCredits } = await import('@/lib/user')
+        const canGenerate = await hasCredits(user.id, questionCount)
+
+        if (!canGenerate) {
+            return NextResponse.json({ error: 'Yetersiz kredi. Lütfen planınızı yükseltin.' }, { status: 403 })
         }
 
         const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage)
@@ -68,6 +76,9 @@ export async function POST(request: Request) {
             .select()
 
         if (questionsError) throw questionsError
+
+        // Consume credits
+        await consumeCredits(user.id, savedQuestions?.length || 0)
 
         return NextResponse.json({
             success: true,

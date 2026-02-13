@@ -14,11 +14,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        console.log('API Request: /api/generate');
         const { prompt, count, questionType, categoryId, image, originalImage } = await req.json()
+        const questionCount = parseInt(count) || 1
 
         if (!prompt && !image) {
             return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
+        }
+
+        // Check credits
+        const { hasCredits, consumeCredits } = await import('@/lib/user')
+        const canGenerate = await hasCredits(user.id, questionCount)
+
+        if (!canGenerate) {
+            return NextResponse.json({ error: 'Yetersiz kredi. Lütfen planınızı yükseltin.' }, { status: 403 })
         }
 
         const generatedQuestions = await generate(prompt, image, questionType || 'Karışık', count, originalImage)
@@ -32,15 +40,15 @@ export async function POST(req: Request) {
             optionC: q.optionC,
             optionD: q.optionD,
             correctAnswer: q.correctAnswer,
-            solution: q.solution,
-            imageUrl: q.imageUrl,
+            solution: q.solution || null,
+            imageUrl: q.imageUrl || null,
             // English translations
-            questionTextEN: q.questionTextEN,
-            optionAEN: q.optionAEN,
-            optionBEN: q.optionBEN,
-            optionCEN: q.optionCEN,
-            optionDEN: q.optionDEN,
-            solutionEN: q.solutionEN,
+            questionTextEN: q.questionTextEN || null,
+            optionAEN: q.optionAEN || null,
+            optionBEN: q.optionBEN || null,
+            optionCEN: q.optionCEN || null,
+            optionDEN: q.optionDEN || null,
+            solutionEN: q.solutionEN || null,
             categoryId: categoryId ? parseInt(categoryId) : null,
         }))
 
@@ -50,6 +58,9 @@ export async function POST(req: Request) {
             .select()
 
         if (error) throw error
+
+        // Consume credits
+        await consumeCredits(user.id, savedQuestions?.length || 0)
 
         return NextResponse.json({ success: true, count: savedQuestions?.length || 0 })
     } catch (error: any) {

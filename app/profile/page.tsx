@@ -191,12 +191,12 @@ export default function ProfilePage() {
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
                     <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                        <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/10 overflow-hidden">
                             {authUser?.user_metadata?.avatar_url ? (
                                 <img
                                     src={authUser.user_metadata.avatar_url}
                                     alt="Profile"
-                                    className="w-full h-full object-cover rounded-2xl"
+                                    className="w-full h-full object-cover"
                                 />
                             ) : (
                                 <span className="text-2xl font-black text-white">{initial}</span>
@@ -400,11 +400,10 @@ export default function ProfilePage() {
                             </div>
                         </div>
                         <button
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-white to-amber-500 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all duration-300 active:scale-[0.97]"
+                            className="px-6 py-2.5 bg-white/[0.03] border border-white/[0.08] hover:bg-white hover:text-black text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-500 active:scale-95 shadow-2xl"
                             onClick={() => {/* Polar checkout will go here */ }}
                         >
-                            Planı Yükselt
-                            <ChevronRight className="w-4 h-4" />
+                            PLANI YÜKSELT
                         </button>
                     </div>
                 </div>

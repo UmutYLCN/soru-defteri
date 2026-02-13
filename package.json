@@ -27,6 +27,7 @@
     "lucide-react": "^0.562.0",
     "next": "16.1.4",
     "openai": "^6.20.0",
+    "puppeteer": "^24.37.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.6",

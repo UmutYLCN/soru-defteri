@@ -1,23 +1,54 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ArrowRight, BookOpen, Brain, FileText, Layout, Sparkles, CheckCircle2, LayoutDashboard } from 'lucide-react'
+import { ArrowRight, BookOpen, Brain, FileText, Layout, Sparkles, CheckCircle2, LayoutDashboard, User as UserIcon, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AuthModals } from '@/components/auth-modals'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useRef } from 'react'
 
 export default function LandingPage() {
     const [authModalOpen, setAuthModalOpen] = useState(false)
     const [authView, setAuthView] = useState<'login' | 'register'>('login')
     const [user, setUser] = useState<any>(null)
+    const [profile, setProfile] = useState<any>(null)
+    const [showUserMenu, setShowUserMenu] = useState(false)
+    const userMenuRef = useRef<HTMLDivElement>(null)
+    const router = useRouter()
 
     useEffect(() => {
         const supabase = createClient()
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) setUser(user)
+        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+            if (authUser) {
+                setUser(authUser)
+                // Fetch profile data
+                fetch('/api/user/me').then(res => res.json()).then(data => {
+                    if (!data.error) setProfile(data)
+                })
+            }
         })
     }, [])
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    const handleLogout = async () => {
+        const { signOut } = await import('@/app/auth/actions')
+        await signOut()
+        setUser(null)
+        setProfile(null)
+        setShowUserMenu(false)
+        router.refresh()
+    }
 
     const openLogin = () => {
         setAuthView('login')
@@ -43,12 +74,74 @@ export default function LandingPage() {
                 <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[32px] px-8 py-3.5 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]">
                     <div className="flex items-center gap-2 group cursor-pointer">
                         <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
-                            Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.</span>
+                            Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.ai</span>
                         </h1>
                     </div>
 
                     <div className="flex items-center gap-6">
-                        {!user && (
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <div className="hidden lg:flex flex-col items-end border-r border-white/10 pr-4">
+                                    <span className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Kredi</span>
+                                    <span className="text-sm text-white font-black leading-none">{profile?.credits ?? '—'}</span>
+                                </div>
+
+                                <div className="relative" ref={userMenuRef}>
+                                    <button
+                                        onClick={() => setShowUserMenu(!showUserMenu)}
+                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all duration-300 ${showUserMenu
+                                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+                                            : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white'
+                                            }`}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                                            {user?.user_metadata?.avatar_url ? (
+                                                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UserIcon size={16} />
+                                            )}
+                                        </div>
+                                        <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline max-w-[100px] truncate">
+                                            {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Hesabım'}
+                                        </span>
+                                    </button>
+
+                                    {showUserMenu && (
+                                        <div className="absolute right-0 mt-3 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="px-4 py-2 border-b border-zinc-800 mb-2">
+                                                <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">Kullanıcı Paneli</p>
+                                                <p className="text-sm font-bold text-white truncate">{user?.user_metadata?.full_name || 'Kullanıcı'}</p>
+                                                <p className="text-[10px] text-zinc-500 truncate">{user?.email}</p>
+                                            </div>
+
+                                            <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold">
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                                                    <UserIcon size={16} />
+                                                </div>
+                                                <span>Profilim</span>
+                                            </Link>
+
+                                            <Link href="/dashboard" className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold">
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                                                    <LayoutDashboard size={16} />
+                                                </div>
+                                                <span>Dashboard</span>
+                                            </Link>
+
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-red-400">
+                                                    <LogOut size={16} />
+                                                </div>
+                                                <span>Çıkış Yap</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
                             <>
                                 <button
                                     onClick={openLogin}
@@ -305,7 +398,7 @@ export default function LandingPage() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
                         <div>
                             <h4 className="text-2xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
-                                Quesly<span className="text-orange-500 text-3xl leading-[0] ml-0.5">.</span>
+                                Quesly<span className="text-orange-500 text-3xl leading-[0] ml-0.5">.</span><span className="text-orange-500 font-black text-[10px] ml-1 tracking-[0.2em] bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">AI</span>
                             </h4>
                             <p className="text-zinc-500 max-w-xs font-medium">
                                 Eğitmenler ve öğrenciler için modern, yapay zeka destekli soru bankası yönetim platformu.

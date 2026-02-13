@@ -96,10 +96,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
             return
         }
 
-        if (!categoryId) {
-            setError('Lütfen bir kategori seçin.')
-            return
-        }
+        const currentCategory = categoryId || null
 
         setLoading(true)
         setError(null)
@@ -131,14 +128,14 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                     originalImage: originalContextImage,
                     questionType,
                     count: parseInt(count),
-                    categoryId: categoryId || null,
+                    categoryId: currentCategory,
                 }
                 : {
                     prompt,
                     image: activeImage,
                     originalImage: originalContextImage,
                     subQuestionCount: parseInt(integratedCount),
-                    categoryId: categoryId || null,
+                    categoryId: currentCategory,
                 }
 
             const response = await fetch(endpoint, {
@@ -374,22 +371,22 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     <div className="space-y-3 w-full sm:w-[240px]">
                                         <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Hedef Kategori *</Label>
                                         <Select
-                                            value={categories.find(c => c.id.toString() === categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === categoryId && !c.parentId) ? categoryId : "")}
-                                            onValueChange={(value) => setCategoryId(value)}
-                                            required
+                                            value={categories.find(c => c.id.toString() === categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === categoryId && !c.parentId) ? categoryId : categoryId === "null" ? "null" : "")}
+                                            onValueChange={(value) => setCategoryId(value === "null" ? "" : value)}
                                         >
                                             <SelectTrigger className="bg-white/[0.02] border-white/[0.08] text-zinc-200 h-13 rounded-2xl px-5 shadow-inner transition-all hover:bg-white/[0.04] focus:ring-orange-500/20 w-full">
-                                                <SelectValue placeholder="Ana Kategori Seçin *" />
+                                                <SelectValue placeholder="Kategori Seçin (Opsiyonel)" />
                                             </SelectTrigger>
                                             <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[20px] max-h-[300px] custom-scrollbar">
+                                                <SelectItem value="null" className="text-zinc-500 font-bold focus:bg-white/5 py-3">
+                                                    Tüm Kategoriler (Genel)
+                                                </SelectItem>
+                                                <div className="h-px bg-white/5 my-1" />
                                                 {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
                                                     <SelectItem key={parent.id} value={parent.id.toString()} className="text-orange-500 font-extrabold focus:bg-orange-500/10 focus:text-orange-500 mt-1 py-3">
                                                         {parent.name}
                                                     </SelectItem>
                                                 ))}
-                                                {(!Array.isArray(categories) || categories.filter(c => !c.parentId).length === 0) && (
-                                                    <div className="p-4 text-xs text-zinc-600 text-center font-bold">Önce kategori oluşturun</div>
-                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>

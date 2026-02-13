@@ -120,24 +120,24 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                                 {/* Parent Category Select */}
                                 <div className="w-full sm:w-[240px]">
                                     <Select
-                                        value={categories.find(c => c.id.toString() === formData.categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === formData.categoryId && !c.parentId) ? formData.categoryId : "")}
+                                        value={categories.find(c => c.id.toString() === formData.categoryId)?.parentId?.toString() || (categories.find(c => c.id.toString() === formData.categoryId && !c.parentId) ? formData.categoryId : formData.categoryId === "null" ? "null" : "")}
                                         onValueChange={(value) => {
-                                            setFormData({ ...formData, categoryId: value });
+                                            setFormData({ ...formData, categoryId: value === "null" ? "" : value });
                                         }}
-                                        required
                                     >
                                         <SelectTrigger className="bg-white/[0.02] border-white/[0.08] text-zinc-200 h-14 rounded-2xl px-5 transition-all hover:bg-white/[0.04] focus:ring-orange-500/20 w-full">
-                                            <SelectValue placeholder="Ana Kategori Seçin *" />
+                                            <SelectValue placeholder="Kategori Seçin (Opsiyonel)" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[24px] max-h-[300px] custom-scrollbar">
+                                            <SelectItem value="null" className="text-zinc-500 font-bold focus:bg-white/5 py-3">
+                                                Tüm Kategoriler (Genel)
+                                            </SelectItem>
+                                            <div className="h-px bg-white/5 my-1" />
                                             {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
                                                 <SelectItem key={parent.id} value={parent.id.toString()} className="text-orange-500 font-extrabold focus:bg-orange-500/10 focus:text-orange-500 mt-1 py-3">
                                                     {parent.name}
                                                 </SelectItem>
                                             ))}
-                                            {(!Array.isArray(categories) || categories.filter(c => !c.parentId).length === 0) && (
-                                                <div className="p-4 text-xs text-zinc-600 text-center font-bold">Önce kategori oluşturun</div>
-                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>

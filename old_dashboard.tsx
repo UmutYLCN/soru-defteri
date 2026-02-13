@@ -1,17 +1,15 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import katex from 'katex'
-import { User, LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight, Loader2 } from 'lucide-react'
+import { User, LogOut, Settings, FileText, CheckCircle2, Layout, Sparkles, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { QuestionForm } from '@/components/question-form'
 import { QuestionTable } from '@/components/question-table'
 import { CategoryForm } from '@/components/category-form'
 import { AIGenerator } from '@/components/ai-generator'
-import { ExamSetupDialog } from '@/components/exam-setup-dialog'
 import { EditQuestionDialog } from '@/components/edit-question-dialog'
 import {
   Select,
@@ -75,7 +73,6 @@ export default function Dashboard() {
   const [pdfThumbnail, setPdfThumbnail] = useState<string | null>(null)
   const [language, setLanguage] = useState<'tr' | 'en'>('tr')
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -88,29 +85,16 @@ export default function Dashboard() {
         setUser(authUser)
       }
 
-      const [questionsRes, categoriesRes, profileRes] = await Promise.all([
-        fetch('/api/questions', { cache: 'no-store' }),
-        fetch('/api/categories', { cache: 'no-store' }),
-        fetch('/api/user/me', { cache: 'no-store' })
+      const [questionsRes, categoriesRes] = await Promise.all([
+        fetch('/api/questions'),
+        fetch('/api/categories')
       ])
-
-      if (!questionsRes.ok || !categoriesRes.ok || !profileRes.ok) {
-        console.error(`API Error Status - Questions: ${questionsRes.status}, Categories: ${categoriesRes.status}, Profile: ${profileRes.status}`)
-      }
 
       const questionsData = await questionsRes.json()
       const categoriesData = await categoriesRes.json()
-      const profileData = await profileRes.json()
-
-      if (!questionsRes.ok) console.error('Questions API Error:', questionsData.message || questionsData.error)
-      if (!categoriesRes.ok) console.error('Categories API Error:', categoriesData.message || categoriesData.error)
-      if (profileData.error) {
-        console.error('Profile Data Error:', profileData.error, profileData.message)
-      }
 
       setQuestions(Array.isArray(questionsData) ? questionsData : [])
       setCategories(Array.isArray(categoriesData) ? categoriesData : [])
-      setProfile(profileData.error ? null : profileData)
       if (newLang) setLanguage(newLang)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -147,65 +131,67 @@ export default function Dashboard() {
   }
 
   const handleExportPDF = async () => {
+    setExportWizardStep('generating')
     try {
-      setExportWizardStep('generating')
+      const { jsPDF } = await import('jspdf')
+      const { toCanvas } = await import('html-to-image')
 
       const element = document.getElementById('pdf-export-content')
       if (!element) return
 
-      // Dökümanı geçici olarak görünür yap (bazı stiller için gerekebilir)
-      const originalDisplay = element.style.display
+      // Temporary show element to ensure it's captured correctly
       element.style.display = 'block'
 
-      // KaTeX ve diğer bileşenlerin tamamen render olması için bekle
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Ensure element is visible but off-screen if needed, though block is usually fine for html-to-image
+      // Wait a bit for KaTeX and layout
+      await new Promise(resolve => setTimeout(resolve, 500))
 
-      const htmlContent = element.innerHTML
-
-      const categoryName = selectedCategory !== 'all'
-        ? categories.find(c => c.id.toString() === selectedCategory)?.name || 'Kategori'
-        : 'Tum_Sorular'
-
-      const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '_')
-      const fileName = `${categoryName}_${dateStr}`.replace(/\s+/g, '_')
-
-      const response = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          html: htmlContent,
-          title: fileName
-        }),
+      const canvas = await toCanvas(element, {
+        backgroundColor: '#ffffff',
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        style: {
+          display: 'block'
+        }
       })
 
-      if (!response.ok) {
-        throw new Error('PDF oluşturma hatası')
+      const imgData = canvas.toDataURL('image/jpeg', 1.0)
+      setPdfThumbnail(imgData)
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      })
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+
+      let heightLeft = pdfHeight
+      let position = 0
+      const pageHeight = pdf.internal.pageSize.getHeight()
+
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST')
+      heightLeft -= pageHeight
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST')
+        heightLeft -= pageHeight
       }
 
-      const data = await response.json()
-
-      // Base64 to Blob
-      const byteCharacters = atob(data.pdf)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: 'application/pdf' })
+      const blob = pdf.output('blob')
+      const url = URL.createObjectURL(blob)
 
       setPdfBlob(blob)
-      setPdfThumbnail(`data:image/jpeg;base64,${data.thumbnail}`)
+      setPdfPreviewUrl(url)
       setExportWizardStep('preview')
-
-      // Temizlik
-      element.style.display = originalDisplay
-
-    } catch (error: any) {
-      console.error('EXPORT ERROR:', error)
-      alert("PDF oluşturulurken bir hata oluştu: " + error.message)
+      element.style.display = 'none'
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
       setExportWizardStep('options')
+      setShowExportDialog(false)
     }
   }
 
@@ -214,7 +200,7 @@ export default function Dashboard() {
       const url = URL.createObjectURL(pdfBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'Quesly_Sorular.pdf'
+      link.download = 'NoteDiur_Sorular.pdf'
       link.click()
       URL.revokeObjectURL(url)
 
@@ -257,9 +243,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-black selection:bg-orange-500/30 font-[family-name:var(--font-geist-sans)]">
       {/* Background Effects - Brand Loyal */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Checkered Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:40px_40px]" />
-
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-600/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-zinc-800/10 blur-[100px] rounded-full" />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] brightness-100" />
@@ -269,10 +252,15 @@ export default function Dashboard() {
       <header className="fixed top-8 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-6xl">
         <div className="bg-zinc-900/40 border border-white/10 backdrop-blur-2xl rounded-[28px] px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-              <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent font-[family-name:var(--font-outfit)] flex items-center">
-                Quesly<span className="text-orange-500 text-4xl leading-[0] ml-0.5">.ai</span>
-              </h1>
+            <Link href="/" className="flex items-center gap-4 group cursor-pointer">
+              <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative shadow-[0_0_25px_rgba(249,115,22,0.15)] transition-all duration-300 group-hover:scale-105 group-hover:border-orange-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                  <path d="M10 10H30V30H10V10Z" stroke="#f97316" strokeWidth="2.5" />
+                  <path d="M15 20C15 17.2386 17.2386 15 20 15C22.7614 15 25 17.2386 25 20C25 22.7614 22.7614 25 20 25C17.2386 25 15 27.2386 15 30H25" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-black text-white tracking-tighter">NoteDiur</h1>
             </Link>
 
 
@@ -287,16 +275,30 @@ export default function Dashboard() {
                   {categories.filter(c => !c.parentId).length}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Soru Hakkı</span>
-                <span className="text-lg text-white font-black leading-none">
-                  {profile?.credits ?? '—'}
-                </span>
-              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-
+            {/* TR/EN Toggle Premium */}
+            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
+              <button
+                onClick={() => setLanguage('tr')}
+                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'tr'
+                  ? 'bg-white text-black shadow-lg scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+              >
+                TR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all duration-300 ${language === 'en'
+                  ? 'bg-white text-black shadow-lg scale-[1.02]'
+                  : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+              >
+                EN
+              </button>
+            </div>
 
             <div className="relative" ref={userMenuRef}>
               <button
@@ -306,7 +308,7 @@ export default function Dashboard() {
                   : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
               >
-                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
                   {user?.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -326,25 +328,19 @@ export default function Dashboard() {
                     <p className="text-[10px] text-zinc-500 truncate">{user?.email}</p>
                   </div>
 
-                  <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold">
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                      <User size={16} />
-                    </div>
-                    <span>{language === 'tr' ? 'Profilim' : 'My Profile'}</span>
-                  </Link>
 
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 transition-colors text-sm font-semibold"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                       <LogOut size={16} />
                     </div>
                     <span>{language === 'tr' ? 'Çıkış Yap' : 'Sign Out'}</span>
                   </button>
 
                   <div className="mt-2 pt-2 border-t border-zinc-800 px-2">
-                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">Quesly v1.0</p>
+                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-tighter">NoteDiur v1.0</p>
                   </div>
                 </div>
               )}
@@ -355,88 +351,39 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-40 relative z-10">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
           {/* Left Action Group */}
           <div className="flex items-center gap-3">
             <QuestionForm categories={categories} onSuccess={() => fetchData()} />
             <AIGenerator categories={categories} onSuccess={() => fetchData()} />
-            <ExamSetupDialog categories={categories} />
           </div>
 
           {/* Right Action Group (Filters & Category Management) */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 h-12">
-              <AnimatePresence mode="popLayout">
-                {(() => {
-                  const selectedCat = categories.find(c => c.id.toString() === selectedCategory);
-                  const activeParentId = selectedCat?.parentId || (selectedCat && !selectedCat.parentId ? selectedCat.id : null);
-                  const children = categories.filter(c => c.parentId === activeParentId);
-
-                  if (activeParentId && children.length > 0) {
-                    return (
-                      <motion.div
-                        key="child-select"
-                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="flex items-center gap-2 h-full"
-                      >
-                        <Select
-                          value={selectedCat?.parentId ? selectedCategory : "all"}
-                          onValueChange={(value) => setSelectedCategory(value === "all" ? activeParentId.toString() : value)}
-                        >
-                          <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-black text-[11px] uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all !h-12 rounded-xl px-4">
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
-                              <SelectValue placeholder="Alt Kategori" />
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[200px]">
-                            <SelectItem value="all" className="rounded-xl focus:bg-white/5 hover:bg-white/5 cursor-pointer py-3 text-[11px] font-black uppercase tracking-widest text-zinc-400 focus:text-white">
-                              Tüm Alt Kategoriler
-                            </SelectItem>
-                            <div className="h-px bg-white/[0.05] my-2" />
-                            {children.map(child => (
-                              <SelectItem key={child.id} value={child.id.toString()} className="rounded-xl focus:bg-white/5 focus:text-white text-zinc-400 text-[11px] font-medium py-2.5">
-                                {child.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="w-px h-6 bg-white/20 mx-2" />
-                      </motion.div>
-                    );
-                  }
-                  return null;
-                })()}
-              </AnimatePresence>
-
-              <Select
-                value={(() => {
-                  const cat = categories.find(c => c.id.toString() === selectedCategory);
-                  return cat?.parentId?.toString() || selectedCategory;
-                })()}
-                onValueChange={(value) => setSelectedCategory(value)}
-              >
-                <SelectTrigger className="min-w-[140px] w-full sm:w-auto bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl text-zinc-400 font-black text-[11px] uppercase tracking-widest focus:ring-0 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all !h-12 rounded-xl px-4">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
-                    <SelectValue placeholder="KATEGORİ" />
-                  </div>
+            <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 pr-2 gap-1 group hover:border-orange-500/30 transition-all duration-300">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[180px] bg-transparent border-0 text-zinc-300 focus:ring-0 hover:text-white transition-colors">
+                  <SelectValue placeholder="Kategori" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950/95 border-white/[0.08] backdrop-blur-2xl text-white rounded-2xl shadow-2xl p-2 min-w-[200px]">
-                  <SelectItem value="all" className="rounded-xl focus:bg-white/5 hover:bg-white/5 cursor-pointer py-3 text-[11px] font-black uppercase tracking-widest text-zinc-400 focus:text-white">
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                  <SelectItem value="all" className="hover:bg-zinc-800 cursor-pointer">
                     Tüm Kategoriler
                   </SelectItem>
-                  <div className="h-px bg-white/[0.05] my-2" />
                   {Array.isArray(categories) && categories.filter(c => !c.parentId).map((parent) => (
-                    <SelectItem key={parent.id} value={parent.id.toString()} className="rounded-xl focus:bg-orange-500/10 focus:text-orange-500 mt-1 font-black text-[11px] uppercase tracking-[0.1em] text-orange-500/80 py-3">
-                      {parent.name}
-                    </SelectItem>
+                    <Fragment key={parent.id}>
+                      <SelectItem value={parent.id.toString()} className="font-bold text-orange-500 bg-orange-500/5 mt-1">
+                        {parent.name}
+                      </SelectItem>
+                      {categories.filter(c => c.parentId === parent.id).map(child => (
+                        <SelectItem key={child.id} value={child.id.toString()} className="pl-6 text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer">
+                          ㄴ {child.name}
+                        </SelectItem>
+                      ))}
+                    </Fragment>
                   ))}
                 </SelectContent>
               </Select>
+              <div className="w-px h-4 bg-zinc-800 mx-1" />
               <CategoryForm categories={categories} onSuccess={() => fetchData()} />
             </div>
 
@@ -444,14 +391,12 @@ export default function Dashboard() {
             <Button
               onClick={() => setShowExportDialog(true)}
               disabled={exporting || filteredQuestions.length === 0}
-              className="bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] backdrop-blur-xl font-black px-8 h-12 rounded-xl shadow-2xl active:scale-95 transition-all flex items-center gap-3 group"
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-900/20 hover:shadow-orange-500/20 transition-all duration-300 flex items-center gap-2 border-0 active:scale-95"
             >
-              {exporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
+              {exporting ? '⏳...' : (
                 <>
-                  <FileText className="w-5 h-5 text-orange-500 group-hover:rotate-12 transition-transform" />
-                  <span className="text-xs uppercase tracking-[0.2em]">PDF DIŞA AKTAR</span>
+                  <FileText size={18} />
+                  <span>PDF EXPORT</span>
                 </>
               )}
             </Button>
@@ -473,12 +418,12 @@ export default function Dashboard() {
 
       <footer className="border-t border-white/5 py-12 mt-20 relative z-10">
         <div className="container mx-auto px-6 text-center text-zinc-600 text-[11px] font-bold uppercase tracking-[0.4em] font-[family-name:var(--font-outfit)]">
-          Quesly Premium v1.0 • Built for Excellence
+          NoteDiur Premium v1.0 • Built for Excellence
         </div>
       </footer>
 
       {/* Export Options Wizard - Premium Redesign */}
-      <div className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-500 no-print ${showExportDialog ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+      <div className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-500 ${showExportDialog ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => exportWizardStep !== 'generating' && setShowExportDialog(false)} />
         <div className="relative bg-zinc-950 border border-white/10 rounded-[32px] w-full max-w-md shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden animate-in zoom-in-95 duration-300">
           {/* Decorative Glow */}
@@ -636,73 +581,42 @@ export default function Dashboard() {
       />
 
 
-      <div
+      {/* Hidden PDF Export Content */}
+      < div
         id="pdf-export-content"
-        className="print-area"
         style={{
           display: 'none',
-          backgroundColor: '#ffffff',
-          color: '#000000',
-          fontFamily: 'Arial, sans-serif'
-        }}
+          width: '210mm',
+          backgroundColor: 'white',
+          color: 'black',
+          padding: '20mm',
+          fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        }
+        }
       >
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @media print {
-            /* Hide UI elements while printing */
-            header, main, footer, .no-print {
-              display: none !important;
-            }
+        {/* PDF Header */}
+        < div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '30px',
+          borderBottom: '2px solid #e5e7eb',
+          paddingBottom: '20px'
+        }}>
+          <div>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#111827', letterSpacing: '-0.5px' }}>NOTEDIUR</h1>
+            <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+              {selectedCategory !== 'all' ? categories.find(c => c.id.toString() === selectedCategory)?.name : 'Tüm Kategoriler'}
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>{filteredQuestions.length} Soru</div>
+            <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date().toLocaleDateString('tr-TR')}</div>
+          </div>
+        </div >
 
-            /* Reset body for printing */
-            body, html {
-              background: white !important;
-              color: black !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              height: auto !important;
-              width: 100% !important;
-            }
-
-            /* Container for print content */
-            #pdf-export-content {
-              display: block !important;
-              visibility: visible !important;
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              height: auto !important;
-              background: white !important;
-              margin: 0 !important;
-              padding: 10mm !important;
-              z-index: 999999 !important;
-            }
-
-            /* Ensure sections don't break mid-air */
-            .pdf-section {
-              break-inside: avoid;
-              page-break-inside: avoid;
-              margin-bottom: 30px;
-              display: block !important;
-            }
-
-            /* Force Answer Key to a new page */
-            .answer-key-section {
-              page-break-before: always !important;
-              break-before: page !important;
-              margin-top: 50px !important;
-              display: block !important;
-            }
-
-            @page {
-              size: A4;
-              margin: 0;
-            }
-          }
-        `}} />
         {/* Questions List */}
-        <div style={{ display: 'block' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
           {(() => {
             const items: any[] = []
             const processedGroupIds = new Set()
@@ -803,7 +717,7 @@ export default function Dashboard() {
               if (item.type === 'single') {
                 const q = item.question
                 return (
-                  <div key={`single-${q.id}`} className="pdf-section" style={{ breakInside: 'avoid', pageBreakInside: 'avoid', marginBottom: '40px', backgroundColor: '#ffffff' }}>
+                  <div key={`single-${q.id}`} style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
                       <span style={{
                         backgroundColor: '#f3f4f6',
@@ -854,7 +768,7 @@ export default function Dashboard() {
                 )
               } else {
                 return (
-                  <div key={`group-${item.id}`} className="pdf-section" style={{ breakInside: 'avoid', pageBreakInside: 'avoid', borderBottom: idx !== items.length - 1 ? '1px solid #f3f4f6' : 'none', paddingBottom: '40px', marginBottom: '40px' }}>
+                  <div key={`group-${item.id}`} style={{ borderBottom: idx !== items.length - 1 ? '1px solid #f3f4f6' : 'none', paddingBottom: '30px' }}>
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
                       <span style={{
                         backgroundColor: '#374151',
@@ -934,12 +848,12 @@ export default function Dashboard() {
           })()}
         </div>
 
-        {/* Answer Key Section */}
-        <div className="pdf-section answer-key-section" style={{
+        {/* Answer Key Page */}
+        <div style={{
           marginTop: '60px',
           paddingTop: '40px',
           borderTop: '2px dashed #d1d5db',
-          backgroundColor: '#ffffff',
+          breakBefore: 'page',
           pageBreakBefore: 'always'
         }}>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center', marginBottom: '30px', color: '#111827' }}>
