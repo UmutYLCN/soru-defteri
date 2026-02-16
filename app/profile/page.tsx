@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Crown, Zap, Calendar, Clock, Globe, ChevronRight, Sparkles, Check, Trophy, Medal, X } from 'lucide-react'
+import { ArrowLeft, Crown, Zap, Calendar, Clock, Globe, ChevronRight, Sparkles, Check, Trophy, Medal, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 interface UserProfile {
@@ -49,6 +49,29 @@ export default function ProfilePage() {
     const [showLeaderboard, setShowLeaderboard] = useState(false)
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([])
     const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
+    const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+    const handleCheckout = async (priceId: string) => {
+        setCheckoutLoading(true)
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ priceId })
+            })
+            const data = await res.json()
+            if (data.url) {
+                window.location.href = data.url
+            } else {
+                throw new Error(data.error || 'Checkout başlatılamadı')
+            }
+        } catch (error) {
+            console.error('Checkout error:', error)
+            alert('Ödeme başlatılırken bir hata oluştu.')
+        } finally {
+            setCheckoutLoading(false)
+        }
+    }
 
     useEffect(() => {
         async function fetchProfile() {
@@ -400,10 +423,11 @@ export default function ProfilePage() {
                             </div>
                         </div>
                         <button
-                            className="px-6 py-2.5 bg-white/[0.03] border border-white/[0.08] hover:bg-white hover:text-black text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-500 active:scale-95 shadow-2xl"
-                            onClick={() => {/* Polar checkout will go here */ }}
+                            disabled={checkoutLoading}
+                            className="px-6 py-2.5 bg-white/[0.03] border border-white/[0.08] hover:bg-white hover:text-black text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-500 active:scale-95 shadow-2xl flex items-center gap-2"
+                            onClick={() => handleCheckout('PRO_PRICE_ID')}
                         >
-                            PLANI YÜKSELT
+                            {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'PLANI YÜKSELT'}
                         </button>
                     </div>
                 </div>

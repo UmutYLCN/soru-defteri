@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ArrowRight, BookOpen, Brain, FileText, Layout, Sparkles, CheckCircle2, LayoutDashboard, User as UserIcon, LogOut } from 'lucide-react'
+import { Brain, Layout, FileText, CheckCircle2, Menu, X, Globe, Zap, ArrowRight, User as UserIcon, LogOut, Loader2, Sparkles, BookOpen, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AuthModals } from '@/components/auth-modals'
 import { createClient } from '@/lib/supabase'
@@ -81,11 +81,6 @@ export default function LandingPage() {
                     <div className="flex items-center gap-6">
                         {user ? (
                             <div className="flex items-center gap-4">
-                                <div className="hidden lg:flex flex-col items-end border-r border-white/10 pr-4">
-                                    <span className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] leading-none mb-1">Kredi</span>
-                                    <span className="text-sm text-white font-black leading-none">{profile?.credits ?? '—'}</span>
-                                </div>
-
                                 <div className="relative" ref={userMenuRef}>
                                     <button
                                         onClick={() => setShowUserMenu(!showUserMenu)}
@@ -170,8 +165,8 @@ export default function LandingPage() {
                     </div>
 
                     <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[0.9] mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-                        Sorularınızı Dijitalleştirin, <br />
-                        <span className="text-orange-500">Zekanızı Özgür Bırakın.</span>
+                        Zaman Kazanın. Soruları Türetin. <br />
+                        <span className="text-orange-500">Bilgiyi Pekiştirin.</span>
                     </h2>
 
                     <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
@@ -367,6 +362,7 @@ export default function LandingPage() {
                             description="Hızlı bir başlangıç ve denemek için harika."
                             features={["500 Soru Üretimi", "Standart AI Modelleri", "Sınırlı PDF Export", "Öncelikli Destek"]}
                             buttonText="Hemen Başla"
+                            priceId="STARTER_PRICE_ID"
                         />
                         <PricingCard
                             title="PRO"
@@ -375,6 +371,7 @@ export default function LandingPage() {
                             features={["2000 Soru Üretimi", "Gelişmiş AI Modelleri (Pro)", "Sınırsız PDF Export", "7/24 Teknik Destek"]}
                             highlighted={true}
                             buttonText="Pro'ya Geç"
+                            priceId="PRO_PRICE_ID"
                         />
                         <PricingCard
                             title="ELITE"
@@ -382,6 +379,7 @@ export default function LandingPage() {
                             description="Limitleri zorlayanlar için durdurulamaz güç."
                             features={["10.000 Soru Üretimi", "En İyi AI Modelleri (Elite)", "Sınırsız PDF Export", "Özel Şablon Tasarımı"]}
                             buttonText="Elite Ol"
+                            priceId="ELITE_PRICE_ID"
                         />
                     </div>
 
@@ -468,14 +466,40 @@ function CheckItem({ text }: { text: string }) {
     )
 }
 
-function PricingCard({ title, price, description, features, highlighted = false, buttonText }: {
+function PricingCard({ title, price, description, features, highlighted = false, buttonText, priceId }: {
     title: string,
     price: string,
     description: string,
     features: string[],
     highlighted?: boolean,
-    buttonText: string
+    buttonText: string,
+    priceId?: string
 }) {
+    const [loading, setLoading] = React.useState(false)
+
+    const handleCheckout = async () => {
+        if (!priceId) return
+        setLoading(true)
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ priceId })
+            })
+            const data = await res.json()
+            if (data.url) {
+                window.location.href = data.url
+            } else {
+                throw new Error(data.error || 'Checkout URL alınamadı')
+            }
+        } catch (error) {
+            console.error('Checkout error:', error)
+            alert('Ödeme başlatılamadı. Lütfen giriş yaptığınızdan emin olun.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className={`relative p-8 rounded-[32px] border transition-all duration-500 group overflow-hidden flex flex-col ${highlighted
             ? 'bg-gradient-to-b from-zinc-900 to-black border-orange-500/40 shadow-[0_20px_50px_rgba(249,115,22,0.1)] scale-105 z-10'
@@ -514,12 +538,14 @@ function PricingCard({ title, price, description, features, highlighted = false,
             </div>
 
             <Button
+                onClick={handleCheckout}
+                disabled={loading || !priceId}
                 className={`w-full py-6 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 active:scale-95 ${highlighted
                     ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20'
                     : 'bg-white hover:bg-zinc-200 text-black'
                     }`}
             >
-                {buttonText}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : buttonText}
             </Button>
 
             {/* Subtle glow for highlighted card */}
