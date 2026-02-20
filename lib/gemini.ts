@@ -180,12 +180,15 @@ export async function generate(
   originalImage?: string // New: original context
 ) {
   const basePrompt = `Create ${count} ${questionType} multiple choice questions in Turkish and English.`;
-  const systemPrompt = `You are a world-class exam question writer. ${basePrompt}
-  Format: JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
-  CRITICAL: Use LaTeX for ALL math. 
-  - Wrap inline math/variables in single dollar signs like $x$.
-  - Wrap complex formulas in double dollar signs like $$\\frac{a}{b}$$. 
-  Use STEP_START/STEP_END format for solutions.`;
+  const systemPrompt = `You are an elite academic professor and an expert exam question writer. ${basePrompt}
+  
+  CRITICAL INSTRUCTIONS:
+  1. DIFFICULTY MATCHING: The generated questions MUST be at the EXACT SAME intellectual and academic difficulty level as the provided prompt or context image. Treat the inputs as a benchmark. Do NOT generate simple or basic questions if the input is advanced.
+  2. MULTI-STEP COMPLEXITY: If the provided example requires a multi-step, complex analytical solution, your generated questions MUST also require a deep, multi-step solution.
+  3. STRICT FIGURE INTEGRATION: If a specific image, diagram, graph, or schematic is provided, EVERY generated question MUST be STRICTLY coupled to that specific figure. Ensure the questions absolutely CANNOT be solved without analyzing the provided visual data. Maintain absolute contextual integrity with the image.
+  4. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
+  5. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs like $$\\frac{a}{b}$$.
+  6. Use STEP_START/STEP_END format for solutions to clearly break down the multi-step analytical process.`;
 
   try {
     const userContent: any[] = [
@@ -207,8 +210,8 @@ export async function generate(
       userContent.push({
         type: "text",
         text: originalImage
-          ? "DIAGRAM IMAGE (Selected): This is the specific diagram to refer to in the questions."
-          : "IMAGE: Analyze the text and diagram in this image."
+          ? "CRITICAL DIAGRAM IMAGE (Selected): This is the specific diagram/figure. YOU MUST strictly base ALL questions on this exact diagram. The questions MUST be impossible to solve without analyzing this specific visual."
+          : "CRITICAL IMAGE: Analyze the text and diagram in this image. YOU MUST strictly base ALL questions on the exact data and visuals provided here."
       });
       userContent.push({
         type: "image_url",
@@ -253,10 +256,14 @@ export async function generateGroupedQuestions(
   originalImage?: string // New: original context
 ) {
   const basePrompt = `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem).`;
-  const systemPrompt = `You are a world-class exam question writer.
+  const systemPrompt = `You are an elite academic professor and an expert exam question writer.
   ${basePrompt}
   
-  Format Requirement: Return a JSON object with:
+  CRITICAL INSTRUCTIONS:
+  1. DIFFICULTY MATCHING: The generated scenario MUST be at the EXACT SAME intellectual and academic difficulty level as the provided prompt or context image. Treat the inputs as a benchmark. Do NOT generate simple or basic scenarios if the input is advanced.
+  2. MULTI-STEP COMPLEXITY: If the provided example requires a multi-step, complex analytical solution, your generated scenario MUST also require a deep, multi-step solution encompassing multiple interconnected steps.
+  3. STRICT FIGURE INTEGRATION: If a specific image, diagram, graph, or schematic is provided, the ENTIRE scenario and EVERY generated question MUST be STRICTLY coupled to that specific figure. Ensure the questions absolutely CANNOT be solved without analyzing the provided visual data. Maintain absolute contextual integrity.
+  4. JSON FORMAT: Return ONLY a JSON object with exactly this structure:
   {
     "stemText": "Turkish stem text",
     "stemTextEN": "English stem text",
@@ -279,9 +286,10 @@ export async function generateGroupedQuestions(
     ]
   }
 
-  CRITICAL: Use LaTeX for ALL math/formulas. 
+  5. MATH FORMATTING: Use LaTeX for ALL math/formulas. 
   - Inline: Wrap in single $ (e.g., $R_1$).
-  - Block: Wrap in double $$ (e.g., $$\\sum X$$).`;
+  - Block: Wrap in double $$ (e.g., $$\\sum X$$).
+  - Inside the solution, use STEP_START/STEP_END format to clearly break down the multi-step analytical process.`;
 
   try {
     const userContent: any[] = [
@@ -303,8 +311,8 @@ export async function generateGroupedQuestions(
       userContent.push({
         type: "text",
         text: originalImage
-          ? "DIAGRAM IMAGE (Selected): This is the specific diagram to refer to."
-          : "IMAGE: Use this image for context and diagrams."
+          ? "CRITICAL DIAGRAM IMAGE (Selected): This is the specific diagram/figure. YOU MUST strictly base the ENTIRE scenario on this exact diagram. The questions MUST be impossible to solve without analyzing this specific visual."
+          : "CRITICAL IMAGE: Analyze the text and diagram in this image. YOU MUST strictly base the ENTIRE scenario on the exact data and visuals provided here."
       });
       userContent.push({
         type: "image_url",
@@ -427,5 +435,25 @@ export async function generateVariants(originalQuestion: any, count: number) {
   } catch (e) {
     console.error("Variant Generation Error:", e);
     throw e;
+  }
+}
+
+export async function generateSubtopics(category: string, topic?: string): Promise<string[]> {
+  const prompt = topic
+    ? `Sen kıdemli bir ${category} profesörüsün. "${topic}" konusu için 6 ile 8 arasında spesifik, akademik ve analitik alt başlık üret. Bu başlıklar soru oluşturmak için birer zemin olmalı. YALNIZCA "subtopics" adında bir string dizisi (array) içeren JSON döndür.`
+    : `Sen kıdemli bir ${category} profesörüsün. Bu kategori için 6 ile 8 arasında spesifik ve temel akademik alt başlık üret. Bu başlıklar soru oluşturmak için birer zemin olmalı. YALNIZCA "subtopics" adında bir string dizisi (array) içeren JSON döndür.`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(response.choices[0].message.content || '{"subtopics": []}');
+    return Array.isArray(parsed.subtopics) ? parsed.subtopics : [];
+  } catch (error) {
+    console.error("Subtopic Generation Error:", error);
+    return [];
   }
 }
