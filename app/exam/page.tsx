@@ -32,11 +32,18 @@ function ExamContent() {
     const [loading, setLoading] = useState(true)
     const [userAnswers, setUserAnswers] = useState<Record<number, string>>({})
     const [examFinished, setExamFinished] = useState(false)
+    const [timeLeft, setTimeLeft] = useState<number | null>(null)
 
     useEffect(() => {
         const fetchQuestions = async () => {
             try {
                 const categories = searchParams.get('categories')?.split(',')
+                const limit = parseInt(searchParams.get('limit') || '10')
+                const timeStr = searchParams.get('time')
+
+                if (timeStr && parseInt(timeStr) > 0) {
+                    setTimeLeft(parseInt(timeStr) * 60)
+                }
 
                 const res = await fetch('/api/questions')
                 if (!res.ok) throw new Error('Failed to fetch questions')
@@ -52,7 +59,9 @@ function ExamContent() {
 
                 // Shuffle all available questions
                 const shuffled = [...(filtered || [])].sort(() => 0.5 - Math.random())
-                setQuestions(shuffled)
+
+                // Apply limit
+                setQuestions(shuffled.slice(0, limit))
             } catch (error) {
                 console.error('Exam questions fetch error:', error)
             } finally {
@@ -62,6 +71,28 @@ function ExamContent() {
 
         fetchQuestions()
     }, [searchParams])
+
+    // Timer effect
+    useEffect(() => {
+        if (timeLeft === null || examFinished) return
+
+        if (timeLeft === 0) {
+            setExamFinished(true)
+            return
+        }
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => (prev !== null ? prev - 1 : null))
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [timeLeft, examFinished])
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
 
     const handleAnswer = (option: string) => {
         if (userAnswers[currentIndex] !== undefined) return
@@ -79,7 +110,7 @@ function ExamContent() {
         return {
             correct: correctCount,
             total: questions.length,
-            percentage: Math.round((correctCount / questions.length) * 100)
+            percentage: questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0
         }
     }
 
@@ -102,9 +133,9 @@ function ExamContent() {
                         <X className="w-10 h-10 text-zinc-500" />
                     </div>
                     <h2 className="text-2xl font-black text-white">SORU BULUNAMADI</h2>
-                    <p className="text-zinc-500">Seçtiğin kriterlere uygun soru mevcut değil.</p>
+                    <p className="text-zinc-500 uppercase text-[10px] font-bold tracking-[0.2em]">Seçtiğin kriterlere uygun soru mevcut değil.</p>
                     <Link href="/dashboard">
-                        <Button className="w-full bg-white text-black font-black py-6 rounded-2xl">DASHBOARD'A DÖN</Button>
+                        <Button className="w-full bg-white text-black font-black py-6 rounded-2xl hover:bg-zinc-200 shadow-xl shadow-white/5">DASHBOARD'A DÖN</Button>
                     </Link>
                 </div>
             </div>
@@ -120,10 +151,10 @@ function ExamContent() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="max-w-2xl w-full bg-[#0c0c0e] border border-white/10 p-12 rounded-[40px] text-center shadow-2xl relative overflow-hidden"
                 >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white to-transparent" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-transparent" />
                     <Trophy className="w-20 h-20 text-white mx-auto mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
-                    <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter">Sınav Tamamlandı!</h2>
-                    <p className="text-zinc-500 font-bold mb-12 uppercase tracking-widest text-xs">Performans Analizin</p>
+                    <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter">Pratik Tamamlandı!</h2>
+                    <p className="text-zinc-500 font-bold mb-12 uppercase tracking-widest text-[10px]">Oturum Özetin</p>
 
                     <div className="grid grid-cols-3 gap-6 mb-12">
                         <div className="bg-white/[0.03] p-6 rounded-3xl border border-white/5">
@@ -143,14 +174,14 @@ function ExamContent() {
                     <div className="flex gap-4">
                         <Button
                             onClick={() => window.location.reload()}
-                            className="flex-1 bg-white/[0.05] border border-white/10 text-white font-black py-7 rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 border-0"
+                            className="flex-1 bg-white/[0.05] border border-white/10 text-white font-black py-7 rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 border-0 active:scale-95 uppercase text-xs tracking-widest"
                         >
-                            <RefreshCcw size={20} />
+                            <RefreshCcw size={18} />
                             TEKRAR DENE
                         </Button>
                         <Link href="/dashboard" className="flex-1">
-                            <Button className="w-full bg-white hover:bg-zinc-200 text-white font-black py-7 rounded-2xl shadow-xl shadow-zinc-950/50 border-0 flex items-center justify-center gap-3">
-                                <Home size={20} />
+                            <Button className="w-full bg-white hover:bg-zinc-200 text-black font-black py-7 rounded-2xl shadow-xl shadow-white/10 border-0 flex items-center justify-center gap-3 active:scale-95 uppercase text-xs tracking-widest">
+                                <Home size={18} />
                                 ANA SAYFA
                             </Button>
                         </Link>
@@ -185,6 +216,12 @@ function ExamContent() {
                 </div>
 
                 <div className="flex items-center gap-8">
+                    {timeLeft !== null && (
+                        <div className={`flex flex-col items-end px-4 py-2 rounded-2xl border ${timeLeft < 60 ? 'bg-red-500/10 border-red-500/50 animate-pulse' : 'bg-white/5 border-white/10'}`}>
+                            <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest leading-none mb-1">Kalan Süre</span>
+                            <span className={`text-xl font-black leading-none ${timeLeft < 60 ? 'text-red-500' : 'text-white'}`}>{formatTime(timeLeft)}</span>
+                        </div>
+                    )}
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest leading-none mb-1">İlerleme</span>
                         <span className="text-xl font-black text-white leading-none">{currentIndex + 1} / {questions.length}</span>
@@ -260,6 +297,47 @@ function ExamContent() {
                                     )
                                 })}
                             </div>
+
+                            {/* Solution Area */}
+                            <AnimatePresence>
+                                {isAnswered && currentQuestion.solution && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="mt-8 pt-8 border-t border-white/5 space-y-4"
+                                    >
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Sparkles className="w-4 h-4 text-orange-500" />
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Çözüm Detayı</h4>
+                                        </div>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 text-sm text-zinc-300 leading-relaxed font-medium">
+                                            {currentQuestion.solution.includes('STEP_START') ? (
+                                                <div className="space-y-6">
+                                                    {currentQuestion.solution.split('STEP_START').filter(Boolean).map((section, idx) => {
+                                                        const [title, ...contentParts] = section.split('STEP_END')
+                                                        const content = contentParts.join('STEP_END')
+                                                        const isStepLabel = title.trim().length < 60 && !title.includes('\\')
+
+                                                        return (
+                                                            <div key={idx} className="space-y-1">
+                                                                {isStepLabel && (
+                                                                    <div className="text-[10px] font-black text-orange-500/70 uppercase tracking-widest mb-2">{title.trim()}</div>
+                                                                )}
+                                                                <div className="text-zinc-300">
+                                                                    <MathText text={isStepLabel ? content.trim() : section.replace(/STEP_END/g, '').trim()} />
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <MathText text={currentQuestion.solution} />
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Navigation Bar */}
