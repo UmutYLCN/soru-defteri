@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { MathText } from '@/components/math-text'
 import { DrawingCanvas } from '@/components/drawing-canvas'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, X, Check, Loader2, Sparkles, Home, Trophy, RefreshCcw, PencilLine } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Check, Loader2, Sparkles, Home, Trophy, RefreshCcw, PencilLine, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -20,6 +20,12 @@ interface Question {
     correctAnswer: string
     solution: string | null
     imageUrl: string | null
+    groupId: number | null
+    group: {
+        id: number
+        stemText: string
+        imageUrl: string | null
+    } | null
 }
 
 function ExamContent() {
@@ -33,6 +39,45 @@ function ExamContent() {
     const [userAnswers, setUserAnswers] = useState<Record<number, string>>({})
     const [examFinished, setExamFinished] = useState(false)
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
+    const [showCanvas, setShowCanvas] = useState(true)
+    const [sidebarWidth, setSidebarWidth] = useState(450)
+    const [isResizing, setIsResizing] = useState(false)
+
+    // Resizing logic
+    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+        setIsResizing(true)
+        e.preventDefault()
+    }
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+            if (!isResizing) return
+
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+            const newWidth = window.innerWidth - clientX
+
+            // Constrain width between 350px and 50% of screen
+            if (newWidth >= 350 && newWidth <= window.innerWidth * 0.5) {
+                setSidebarWidth(newWidth)
+            }
+        }
+
+        const handleMouseUp = () => setIsResizing(false)
+
+        if (isResizing) {
+            window.addEventListener('mousemove', handleMouseMove)
+            window.addEventListener('mouseup', handleMouseUp)
+            window.addEventListener('touchmove', handleMouseMove)
+            window.addEventListener('touchend', handleMouseUp)
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove)
+            window.removeEventListener('mouseup', handleMouseUp)
+            window.removeEventListener('touchmove', handleMouseMove)
+            window.removeEventListener('touchend', handleMouseUp)
+        }
+    }, [isResizing])
 
     useEffect(() => {
         const fetchQuestions = async () => {
@@ -247,9 +292,36 @@ function ExamContent() {
                     >
                         {/* Question Content Card */}
                         <div className="bg-[#0c0c0e]/80 border border-white/[0.05] p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8">
+                            {/* Category & Group Label */}
                             <div className="flex items-center justify-between">
                                 <span className="inline-block px-4 py-1.5 bg-white/10 border border-white/20 rounded-full text-[10px] font-black text-white uppercase tracking-widest">Soru #{currentIndex + 1}</span>
+                                {currentQuestion.group && (
+                                    <span className="flex items-center gap-2 px-4 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                                        <BookOpen size={12} /> Bütünleşik Soru Grubu
+                                    </span>
+                                )}
                             </div>
+
+                            {/* Group Content (Common Text/Stem) */}
+                            {currentQuestion.group && (
+                                <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 md:p-8 space-y-6">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">KAYNAK METİN / GÖRSEL</h4>
+                                    </div>
+                                    <div className="text-lg md:text-xl font-medium leading-relaxed text-zinc-300">
+                                        <MathText text={currentQuestion.group.stemText} />
+                                    </div>
+                                    {currentQuestion.group.imageUrl && (
+                                        <div className="rounded-2xl overflow-hidden border border-white/5 bg-zinc-900/40 p-1.5">
+                                            <img src={currentQuestion.group.imageUrl} alt="Group Diagram" className="max-w-full h-auto mx-auto rounded-xl" />
+                                        </div>
+                                    )}
+                                    <div className="pt-4 border-t border-white/5 flex items-center justify-center">
+                                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Bu bilgiler doğrultusunda aşağıdaki soruyu cevaplayınız</span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="text-xl md:text-2xl font-medium leading-relaxed text-zinc-100">
                                 <MathText text={currentQuestion.questionText} />
@@ -353,7 +425,7 @@ function ExamContent() {
                             {currentIndex === questions.length - 1 && isAnswered ? (
                                 <Button
                                     onClick={() => setExamFinished(true)}
-                                    className="bg-white hover:bg-zinc-200 text-white shadow-xl shadow-white/20 px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-0 active:scale-95 transition-all"
+                                    className="bg-zinc-950 hover:bg-black text-white border border-white/10 shadow-2xl px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all"
                                 >
                                     SINAVI TAMAMLA <Trophy className="ml-2 w-4 h-4" />
                                 </Button>
@@ -371,24 +443,80 @@ function ExamContent() {
                 </div>
 
                 {/* Right: Divider & Canvas (Tablet/Large screen visible) */}
-                <div className="hidden min-[1100px]:flex w-[450px] border-l border-white/5 bg-[#080809] p-8 flex-col gap-6 relative z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-                                <PencilLine className="text-white w-5 h-5" />
+                <AnimatePresence>
+                    {showCanvas && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 50, width: 0 }}
+                            animate={{
+                                opacity: 1,
+                                x: 0,
+                                width: isResizing ? sidebarWidth : sidebarWidth,
+                            }}
+                            exit={{ opacity: 0, x: 50, width: 0 }}
+                            transition={isResizing ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
+                            className="hidden lg:flex border-l border-white/5 bg-[#080809] p-8 flex-col gap-6 relative z-10 shrink-0"
+                            style={{ width: sidebarWidth }}
+                        >
+                            {/* Resize Handle */}
+                            <div
+                                onMouseDown={handleMouseDown}
+                                onTouchStart={handleMouseDown}
+                                className={`absolute left-0 top-0 w-2 h-full cursor-col-resize z-50 group hover:bg-orange-500/20 transition-colors flex items-center justify-center ${isResizing ? 'bg-orange-500/30' : ''}`}
+                            >
+                                <div className="w-0.5 h-12 bg-white/10 group-hover:bg-orange-500/50 rounded-full" />
                             </div>
-                            <div>
-                                <h3 className="text-xs font-black uppercase tracking-widest text-white">Çözüm Alanı</h3>
-                                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter">Tablet ve Kalem Dostu</p>
+
+                            <div className="flex items-center justify-between min-w-[300px]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                                        <PencilLine className="text-orange-500 w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Karalama Defteri</h3>
+                                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">iPad & Kalem Dostu Alan</p>
+                                    </div>
+                                </div>
+                                <Button
+                                    onClick={() => setShowCanvas(false)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-10 h-10 rounded-xl hover:bg-white/5 text-zinc-500 hover:text-white transition-all scale-90"
+                                >
+                                    <X size={20} />
+                                </Button>
                             </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 relative">
-                        <DrawingCanvas />
-                    </div>
-                </div>
-            </div>
-        </div>
+                            <div className="flex-1 relative min-h-0 min-w-[350px]">
+                                <DrawingCanvas />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div >
+
+            {/* Floating Action Buffer for Canvas Toggle */}
+            <AnimatePresence>
+                {
+                    !showCanvas && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                            className="fixed bottom-10 right-10 z-[60] hidden lg:block"
+                        >
+                            <Button
+                                onClick={() => setShowCanvas(true)}
+                                className="w-16 h-16 rounded-full bg-orange-500 hover:bg-orange-600 shadow-[0_15px_40px_rgba(249,115,22,0.4)] border-0 flex items-center justify-center group transition-all active:scale-90"
+                            >
+                                <PencilLine className="text-white w-7 h-7 group-hover:rotate-12 transition-transform" />
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-md animate-bounce">
+                                    <span className="text-[8px] font-black text-orange-600">!</span>
+                                </div>
+                            </Button>
+                        </motion.div>
+                    )
+                }
+            </AnimatePresence >
+        </div >
     )
 }
 
