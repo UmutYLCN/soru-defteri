@@ -101,7 +101,7 @@ export function ExamSetupDialog({ categories }: ExamSetupDialogProps) {
                     {/* Header */}
                     <div className="p-8 pb-4">
                         <DialogHeader>
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-2 pr-12">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
                                         <Zap className="text-orange-500" size={24} />

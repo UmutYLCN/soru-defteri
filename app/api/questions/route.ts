@@ -73,6 +73,11 @@ export async function POST(request: Request) {
 
         if (error) throw error
 
+        // Kullanıcı üretim sayısını artır ve senkronize et
+        await ensureUserExists(user)
+        const { incrementProduction } = await import('@/lib/user')
+        await incrementProduction(user.id, 1)
+
         return NextResponse.json(question, { status: 201 })
     } catch (error) {
         console.error('Error creating question:', error)

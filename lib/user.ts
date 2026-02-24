@@ -100,3 +100,27 @@ export async function consumeCredits(userId: string, amount: number = 1) {
         console.error('consumeCredits failed:', error)
     }
 }
+export async function incrementProduction(userId: string, amount: number = 1) {
+    try {
+        const supabase = await createClient()
+        const { data: user } = await supabase
+            .from('User')
+            .select('totalCreditsUsed')
+            .eq('id', userId)
+            .single()
+
+        if (!user) return null
+
+        return await supabase
+            .from('User')
+            .update({
+                totalCreditsUsed: (user.totalCreditsUsed || 0) + amount,
+                updatedAt: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select()
+            .single()
+    } catch (error) {
+        console.error('incrementProduction failed:', error)
+    }
+}
