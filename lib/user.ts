@@ -19,9 +19,15 @@ export async function ensureUserExists(authUser: {
     const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || null
     const image = authUser.user_metadata?.avatar_url || null
 
-    // Attempt to upsert the user record
-    // This is more robust than select-then-insert/update
     const now = new Date().toISOString()
+
+    // Check if user exists first to handle initial credits correctly
+    const { data: existingUser } = await supabase
+        .from('User')
+        .select('id, credits')
+        .eq('id', authUser.id)
+        .single()
+
     const { data: user, error } = await supabase
         .from('User')
         .upsert({
@@ -30,7 +36,9 @@ export async function ensureUserExists(authUser: {
             name,
             image,
             lastLoginAt: now,
-            updatedAt: now, // Satisfy NOT NULL constraint
+            updatedAt: now,
+            // If new user, give 1000 credits (temporary test mode)
+            credits: existingUser ? existingUser.credits : 1000,
         }, { onConflict: 'id' })
         .select()
         .single()

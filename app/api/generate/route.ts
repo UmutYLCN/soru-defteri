@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { generate } from '@/lib/gemini'
+import { generate } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Yetersiz kredi. Lütfen planınızı yükseltin.' }, { status: 403 })
         }
 
-        const generatedQuestions = await generate(prompt, image, questionType || 'Karışık', count, originalImage)
+        const generatedQuestions = await generate(prompt, image, questionType || 'Karışık', count, originalImage, user.id, categoryId ? parseInt(categoryId) : undefined)
 
         // Save to database
         const questionsToSave = generatedQuestions.map((q: any) => ({

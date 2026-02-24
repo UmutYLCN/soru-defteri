@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { generateVariants } from '@/lib/gemini'
+import { generateVariants } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 export async function POST(request: Request) {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
             optionCEN: originalQuestion.optionCEN,
             optionDEN: originalQuestion.optionDEN,
             solutionEN: originalQuestion.solutionEN,
-        }, count)
+        }, count, user.id)
 
         // Save all variants to the database under the same category
         const variantsToSave = variants.map((variant: any) => ({

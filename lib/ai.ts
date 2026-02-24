@@ -89,23 +89,21 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
  */
 export async function verifyAndFixQuestion(q: any): Promise<any> {
   try {
-    const verifyPrompt = `You are a strict academic auditor. Review the following multiple-choice question for logical consistency and mathematical accuracy.
+    const verifyPrompt = `You are a strict academic auditor and subject matter expert. Review the following multiple-choice question.
     QUESTION DATA:
     ${JSON.stringify(q, null, 2)}
     YOUR TASKS:
-    1. Re-calculate everything from scratch based on the question text.
-    2. Check if the "correctAnswer" actually corresponds to the result.
-    3. REMOVE ALL "INNER MONOLOGUE".
-    4. Provide Step-by-step professional solution using STEP_START/STEP_END.
-    5. CRITICAL LaTeX formatting rules:
+    1. RE-CALCULATION: Re-calculate everything from scratch. If it's a multi-step problem, verify EVERY intermediate value.
+    2. CORRECTNESS: Ensure the "correctAnswer" is mathematically and logically sound. Fix it and the options if necessary.
+    3. RIGOR: Ensure the difficulty of the answer and solution matches or exceeds the question's level. Never simplify a complex problem.
+    4. MANDATORY SOLUTION FORMAT: You MUST provide a professional, detailed, pedagogical breakdown using STEP_START/STEP_END tags for each phase. If the question is multi-step, the solution MUST show all those steps.
+    5. REMOVE INNER MONOLOGUE: Return only the corrected JSON.
+    6. CRITICAL LaTeX formatting rules:
        - Every single math expression, variable, number with units, or formula MUST be wrapped in dollar signs.
-       - Use $...$ for inline math. Example: "The force is $F = 5$ N" NOT "The force is \\vec{F} = 5 N"
-       - Use $$...$$ for standalone formulas. Example: "$$F = \\frac{kq_1q_2}{r^2}$$"
-       - NEVER use LaTeX commands like \\frac, \\vec, \\sqrt outside of $ delimiters.
+       - Use $...$ for inline math. Example: "The force is $F = 5$ N"
+       - Use $$...$$ for standalone formulas.
        - Plain text should remain plain, only math/formulas/variables go inside $.
-       - Example correct: "Net kuvvet $\\vec{F}_{net}$ hesaplanır: $$F_{net} = \\frac{kq_1 q_2}{r^2} = 2.5$ N"
-       - Example WRONG: "Net kuvvet \\vec{F}_{net} hesaplanır: \\frac{kq_1 q_2}{r^2} = 2.5 N"
-    Return corrected question data in same JSON format.`;
+    Return corrected question data in the exact same JSON format.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -172,23 +170,62 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
   }
 }
 
+/**
+ * Fetches existing questions for a user in a specific category to ensure uniqueness.
+ */
+async function getCategoryQuestions(userId: string, categoryId?: number): Promise<string[]> {
+  try {
+    const { createClient } = await import("./supabase-server");
+    const supabase = await createClient();
+    let query = supabase
+      .from("Question")
+      .select("questionText")
+      .eq("userId", userId);
+
+    if (categoryId) {
+      query = query.eq("categoryId", categoryId);
+    }
+
+    const { data } = await query
+      .order("createdAt", { ascending: false })
+      .limit(50); // increased limit for better coverage
+
+    return (data || []).map((q: any) => q.questionText);
+  } catch (error) {
+    console.error("Error fetching category questions:", error);
+    return [];
+  }
+}
+
 export async function generate(
   prompt: string,
   image?: string,
   questionType: string = "Karışık",
   count: number = 5,
-  originalImage?: string // New: original context
+  originalImage?: string,
+  userId?: string,
+  categoryId?: number
 ) {
-  const basePrompt = `Create ${count} ${questionType} multiple choice questions in Turkish and English.`;
+  const existingQuestions = userId ? await getCategoryQuestions(userId, categoryId) : [];
+  const uniquenessConstraint = existingQuestions.length > 0
+    ? `\nSTRICT UNIQUENESS: The user already has these questions in this category: [${existingQuestions.join(' | ')}]. YOU MUST NOT repeat any of these. Ensure entirely new scenarios, variables, and logical paths.`
+    : "";
+
+  const basePrompt = image
+    ? `You MUST first transcribe the ORIGINAL question exactly as it appears in the image as the FIRST question in your response. AND THEN create ${count} additional NEW ${questionType} multiple choice questions based on the same context and difficulty. Thus, you will return a total of ${count + 1} questions. ${uniquenessConstraint}`
+    : `Create ${count} ${questionType} multiple choice questions in Turkish and English. ${uniquenessConstraint}`;
+
   const systemPrompt = `You are an elite academic professor and an expert exam question writer. ${basePrompt}
   
   CRITICAL INSTRUCTIONS:
-  1. DIFFICULTY MATCHING: The generated questions MUST be at the EXACT SAME intellectual and academic difficulty level as the provided prompt or context image. Treat the inputs as a benchmark. Do NOT generate simple or basic questions if the input is advanced.
-  2. MULTI-STEP COMPLEXITY: If the provided example requires a multi-step, complex analytical solution, your generated questions MUST also require a deep, multi-step solution.
-  3. STRICT FIGURE INTEGRATION: If a specific image, diagram, graph, or schematic is provided, EVERY generated question MUST be STRICTLY coupled to that specific figure. Ensure the questions absolutely CANNOT be solved without analyzing the provided visual data. Maintain absolute contextual integrity with the image.
-  4. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
-  5. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs like $$\\frac{a}{b}$$.
-  6. Use STEP_START/STEP_END format for solutions to clearly break down the multi-step analytical process.`;
+  1. TRANSCRIPTION: If an image is provided, your first generated question MUST be an exact transcription and academic formulation of the question explicitly shown in that image.
+  2. DEEP ANALYSIS: Analyze the input (text or image) thoroughly. Identify the academic level (e.g., Undergraduate Physics, Graduate Math).
+  3. DIFFICULTY MATCHING & PRESERVATION: The generated questions MUST match or exceed the intellectual rigor and complexity of the input. NEVER downgrade the difficulty.
+  4. MANDATORY MULTI-STEP COMPLEXITY: If the original problem requires a multi-step analytical solution, your generated questions MUST also require a deep, multi-step process to solve.
+  5. STRICT FIGURE INTEGRATION: If a diagram, graph, or schematic is provided, EVERY question MUST be strictly coupled to it. Analyzing the visual data must be mandatory for solving.
+  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
+  7. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
+  8. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.`;
 
   try {
     const userContent: any[] = [
@@ -198,7 +235,7 @@ export async function generate(
     if (originalImage) {
       userContent.push({
         type: "text",
-        text: "CONTEXT IMAGE (Original): This image contains the full problem description and text context. Use this TO UNDERSTAND the problem."
+        text: "CONTEXT IMAGE (Original): This image contains the full problem description and text context. Use this TO UNDERSTAND the problem and transcribe the original question."
       });
       userContent.push({
         type: "image_url",
@@ -210,8 +247,8 @@ export async function generate(
       userContent.push({
         type: "text",
         text: originalImage
-          ? "CRITICAL DIAGRAM IMAGE (Selected): This is the specific diagram/figure. YOU MUST strictly base ALL questions on this exact diagram. The questions MUST be impossible to solve without analyzing this specific visual."
-          : "CRITICAL IMAGE: Analyze the text and diagram in this image. YOU MUST strictly base ALL questions on the exact data and visuals provided here."
+          ? "CRITICAL DIAGRAM IMAGE (Selected): This is the specific diagram/figure. YOU MUST strictly base ALL questions on this exact diagram. The questions MUST be impossible to solve without analyzing this specific visual. ALSO TRANSCRIBE THE ORIGINAL QUESTION FROM HERE IF PRESENT."
+          : "CRITICAL IMAGE: Analyze the text and diagram in this image. YOU MUST transcribe the original question exactly AND then generate the variations."
       });
       userContent.push({
         type: "image_url",
@@ -253,47 +290,31 @@ export async function generateGroupedQuestions(
   prompt: string,
   image?: string,
   subQuestionCount: number = 3,
-  originalImage?: string // New: original context
+  originalImage?: string,
+  userId?: string,
+  categoryId?: number
 ) {
-  const basePrompt = `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem).`;
+  const existingQuestions = userId ? await getCategoryQuestions(userId, categoryId) : [];
+  const uniquenessConstraint = existingQuestions.length > 0
+    ? `\nSTRICT UNIQUENESS: Ensure this new scenario and its questions are completely distinct from these existing ones: [${existingQuestions.slice(0, 15).join(' | ')}].`
+    : "";
+
+  const basePrompt = `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem). ${uniquenessConstraint}`;
   const systemPrompt = `You are an elite academic professor and an expert exam question writer.
   ${basePrompt}
   
   CRITICAL INSTRUCTIONS:
-  1. DIFFICULTY MATCHING: The generated scenario MUST be at the EXACT SAME intellectual and academic difficulty level as the provided prompt or context image. Treat the inputs as a benchmark. Do NOT generate simple or basic scenarios if the input is advanced.
-  2. MULTI-STEP COMPLEXITY: If the provided example requires a multi-step, complex analytical solution, your generated scenario MUST also require a deep, multi-step solution encompassing multiple interconnected steps.
-  3. STRICT FIGURE INTEGRATION: If a specific image, diagram, graph, or schematic is provided, the ENTIRE scenario and EVERY generated question MUST be STRICTLY coupled to that specific figure. Ensure the questions absolutely CANNOT be solved without analyzing the provided visual data. Maintain absolute contextual integrity.
-  4. JSON FORMAT: Return ONLY a JSON object with exactly this structure:
-  {
-    "stemText": "Turkish stem text",
-    "stemTextEN": "English stem text",
-    "questions": [
-      {
-        "questionText": "...",
-        "optionA": "...",
-        "optionB": "...",
-        "optionC": "...",
-        "optionD": "...",
-        "correctAnswer": "A",
-        "solution": "...",
-        "questionTextEN": "...",
-        "optionAEN": "...",
-        "optionBEN": "...",
-        "optionCEN": "...",
-        "optionDEN": "...",
-        "solutionEN": "..."
-      }
-    ]
-  }
-
-  5. MATH FORMATTING: Use LaTeX for ALL math/formulas. 
-  - Inline: Wrap in single $ (e.g., $R_1$).
-  - Block: Wrap in double $$ (e.g., $$\\sum X$$).
-  - Inside the solution, use STEP_START/STEP_END format to clearly break down the multi-step analytical process.`;
+  1. DEEP SCENARIO ANALYSIS: Analyze the input context deeply. Identify the core concepts (e.g., thermodynamic cycles, structural analysis).
+  2. RIGOR MATCHING: The generated scenario and its sub-questions MUST match or exceed the academic difficulty of the input. Do not simplify.
+  3. MANDATORY MULTI-STEP INTERCONNECTION: The sub-questions must form a cohesive, complex scenario. If the input is multi-step, the scenario MUST require a chain of complex logical/mathematical steps.
+  4. STRICT FIGURE INTEGRATION: The entire scenario MUST be built around the provided diagram/figure. It must be impossible to answer the questions without detailed visual analysis.
+  5. JSON FORMAT: Return ONLY a JSON object with fields: stemText, stemTextEN, questions (array of question objects).
+  6. MATH FORMATTING: Use LaTeX for ALL math. Inline: $...$, Block: $$...$$.
+  7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.`;
 
   try {
     const userContent: any[] = [
-      { type: "text", text: `Topic/Prompt: ${prompt || "Generate grouped questions based on the context."}` }
+      { type: "text", text: `Topic / Prompt: ${prompt || "Generate grouped questions based on the context."} ` }
     ];
 
     if (originalImage) {
@@ -369,7 +390,7 @@ export async function generateGroupedQuestions(
 }
 
 export async function processNotebookQuestion(q: any) {
-  const prompt = `Convert to professional university-level question: 
+  const prompt = `Convert to professional university - level question:
   QUESTION: ${q.question}
   Return JSON fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN`;
 
@@ -391,7 +412,7 @@ export async function processNotebookQuestion(q: any) {
  */
 export async function detectDiagram(image: string): Promise<boolean> {
   try {
-    const prompt = `Analyze this image. Does it contain a diagram, circuit schematic, graph, or any technical illustration? 
+    const prompt = `Analyze this image. Does it contain a diagram, circuit schematic, graph, or any technical illustration?
     Return ONLY a JSON object: {"hasDiagram": true} or {"hasDiagram": false}`;
 
     const response = await openai.chat.completions.create({
@@ -416,9 +437,15 @@ export async function detectDiagram(image: string): Promise<boolean> {
   }
 }
 
-export async function generateVariants(originalQuestion: any, count: number) {
+export async function generateVariants(originalQuestion: any, count: number, userId?: string) {
+  const existingQuestions = userId ? await getCategoryQuestions(userId, originalQuestion.categoryId) : [];
+  const uniquenessConstraint = existingQuestions.length > 0
+    ? `\nSTRICT VARIANT UNIQUENESS: While creating variants, ensure they don't overlap with these other existing questions: [${existingQuestions.slice(0, 10).join(' | ')}].`
+    : "";
+
   const systemPrompt = `Generate ${count} variations of this question:
   ${JSON.stringify(originalQuestion)}
+  ${uniquenessConstraint}
   Return JSON array of question objects.`;
 
   try {

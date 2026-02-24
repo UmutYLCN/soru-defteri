@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { processNotebookQuestion } from '@/lib/gemini'
+import { processNotebookQuestion } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 interface NotebookQuestion {

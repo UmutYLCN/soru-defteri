@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { generateGroupedQuestions } from '@/lib/gemini'
+import { generateGroupedQuestions } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Yetersiz kredi. Lütfen planınızı yükseltin.' }, { status: 403 })
         }
 
-        const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage)
+        const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage, user.id, categoryId ? parseInt(categoryId) : undefined)
 
         // Create the QuestionGroup first
         const { data: group, error: groupError } = await supabase

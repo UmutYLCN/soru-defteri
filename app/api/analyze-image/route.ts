@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { detectDiagram } from '@/lib/gemini'
+import { detectDiagram } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 export async function POST(req: Request) {

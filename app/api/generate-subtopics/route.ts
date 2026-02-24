@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { generateSubtopics } from '@/lib/gemini'
+import { generateSubtopics } from '@/lib/ai'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'

@@ -23,7 +23,7 @@ interface UserProfile {
 }
 
 const planConfig: Record<string, { label: string; color: string; icon: string; credits: number }> = {
-    FREE: { label: 'Ücretsiz', color: 'text-zinc-400', icon: '🆓', credits: 10 },
+    FREE: { label: 'Ücretsiz', color: 'text-zinc-400', icon: '🆓', credits: 1000 },
     STARTER: { label: 'Starter', color: 'text-blue-400', icon: '🚀', credits: 500 },
     PRO: { label: 'Pro', color: 'text-purple-400', icon: '⚡', credits: 2000 },
     ELITE: { label: 'Elite', color: 'text-amber-400', icon: '👑', credits: 10000 },
