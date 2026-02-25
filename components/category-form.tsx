@@ -94,7 +94,7 @@ export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
                             </div>
                             Kategori <span className="text-orange-500 ml-1">Yönetimi</span>
                         </DialogTitle>
-                        <p className="text-zinc-500 text-xs font-medium mt-1 ml-13">
+                        <p className="text-zinc-500 text-xs font-medium mt-1 ml-12">
                             Yeni konular ekleyerek soru bankanızı organize edin.
                         </p>
                     </div>

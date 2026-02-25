@@ -14,12 +14,12 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
     const base64Data = image.split(',')[1];
     const mimeType = image.split(',')[0].split(':')[1].split(';')[0];
 
-    const detectionPrompt = `Analyze this physics/engineering problem image. 
-    Find the primary diagram, circuit schematic, graph, or illustration.
-    Return ONLY a JSON object with the bounding box coordinates [ymin, xmin, ymax, xmax] normalized from 0 to 1000.
+    const detectionPrompt = `Analyze this academic problem image. 
+    Identify the primary technical diagram, circuit schematic, graph, table, or illustration that is essential for understanding or solving the problem. 
+    CRITICAL: If the image consists ONLY of text (even handwritten) without any graphics, return {"boundingBox": null}.
+    Otherwise, return a JSON object with the bounding box coordinates [ymin, xmin, ymax, xmax] normalized from 0 to 1000.
     
-    Format: {"boundingBox": [ymin, xmin, ymax, xmax]}
-    If no diagram is present, return {"boundingBox": [0, 0, 1000, 1000]}`;
+    Format: {"boundingBox": [ymin, xmin, ymax, xmax]}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -77,10 +77,10 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
       return `data:${mimeType};base64,${croppedBuffer.toString('base64')}`;
     }
 
-    return image;
+    return null;
   } catch (error) {
     console.error("OpenAI Extraction Error:", error);
-    return image;
+    return null;
   }
 }
 
@@ -103,6 +103,7 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
        - Use $...$ for inline math. Example: "The force is $F = 5$ N"
        - Use $$...$$ for standalone formulas.
        - Plain text should remain plain, only math/formulas/variables go inside $.
+    7. MULTILINGUAL PRESERVATION: You MUST preserve and verify both "questionText" (Turkish) and "questionTextEN" (English) fields, along with their respective options and solutions. If one is missing or incorrect, translate/fix it.
     Return corrected question data in the exact same JSON format.`;
 
     const response = await openai.chat.completions.create({
@@ -212,8 +213,8 @@ export async function generate(
     : "";
 
   const basePrompt = image
-    ? `You MUST first transcribe the ORIGINAL question exactly as it appears in the image as the FIRST question in your response. AND THEN create ${count} additional NEW ${questionType} multiple choice questions based on the same context and difficulty. Thus, you will return a total of ${count + 1} questions. ${uniquenessConstraint}`
-    : `Create ${count} ${questionType} multiple choice questions in Turkish and English. ${uniquenessConstraint}`;
+    ? `You MUST first transcribe the ORIGINAL question exactly as it appears in the image in BOTH Turkish and English. AND THEN create ${count} additional NEW ${questionType} multiple choice questions in BOTH Turkish and English based on the same context and difficulty. Thus, you will return a total of ${count + 1} questions (each with TR and EN versions). ${uniquenessConstraint}`
+    : `Create ${count} ${questionType} multiple choice questions in BOTH Turkish and English. ${uniquenessConstraint}`;
 
   const systemPrompt = `You are an elite academic professor and an expert exam question writer. ${basePrompt}
   
@@ -223,9 +224,10 @@ export async function generate(
   3. DIFFICULTY MATCHING & PRESERVATION: The generated questions MUST match or exceed the intellectual rigor and complexity of the input. NEVER downgrade the difficulty.
   4. MANDATORY MULTI-STEP COMPLEXITY: If the original problem requires a multi-step analytical solution, your generated questions MUST also require a deep, multi-step process to solve.
   5. STRICT FIGURE INTEGRATION: If a diagram, graph, or schematic is provided, EVERY question MUST be strictly coupled to it. Analyzing the visual data must be mandatory for solving.
-  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.
-  7. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
-  8. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.`;
+  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer, solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
+  7. MULTILINGUAL REQUIREMENT: Every single question MUST have high-quality content in both Turkish (main fields) and English (EN fields).
+  8. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
+  9. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.`;
 
   try {
     const userContent: any[] = [
@@ -308,7 +310,7 @@ export async function generateGroupedQuestions(
   2. RIGOR MATCHING: The generated scenario and its sub-questions MUST match or exceed the academic difficulty of the input. Do not simplify.
   3. MANDATORY MULTI-STEP INTERCONNECTION: The sub-questions must form a cohesive, complex scenario. If the input is multi-step, the scenario MUST require a chain of complex logical/mathematical steps.
   4. STRICT FIGURE INTEGRATION: The entire scenario MUST be built around the provided diagram/figure. It must be impossible to answer the questions without detailed visual analysis.
-  5. JSON FORMAT: Return ONLY a JSON object with fields: stemText, stemTextEN, questions (array of question objects).
+  5. JSON FORMAT: Return ONLY a JSON object with fields: stemText (TR), stemTextEN (EN), questions (array of question objects with TR and EN versions).
   6. MATH FORMATTING: Use LaTeX for ALL math. Inline: $...$, Block: $$...$$.
   7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.`;
 
@@ -412,7 +414,8 @@ export async function processNotebookQuestion(q: any) {
  */
 export async function detectDiagram(image: string): Promise<boolean> {
   try {
-    const prompt = `Analyze this image. Does it contain a diagram, circuit schematic, graph, or any technical illustration?
+    const prompt = `Analyze this image. Does it contain a diagram, circuit schematic, graph, table, or any technical illustration that is essential for understanding or solving the problem?
+    IMPORTANT: If the image is ONLY text (printed or handwritten) or is blank, return {"hasDiagram": false}.
     Return ONLY a JSON object: {"hasDiagram": true} or {"hasDiagram": false}`;
 
     const response = await openai.chat.completions.create({
@@ -446,7 +449,8 @@ export async function generateVariants(originalQuestion: any, count: number, use
   const systemPrompt = `Generate ${count} variations of this question:
   ${JSON.stringify(originalQuestion)}
   ${uniquenessConstraint}
-  Return JSON array of question objects.`;
+  CRITICAL: You MUST generate each variation in BOTH Turkish and English, filling all TR and EN fields appropriately.
+  Return JSON array of question objects (e.g., {"questions": [...]}).`;
 
   try {
     const response = await openai.chat.completions.create({

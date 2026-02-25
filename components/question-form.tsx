@@ -306,7 +306,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                             type="button"
                             variant="ghost"
                             onClick={() => setOpen(false)}
-                            className="flex-1 h-15 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
+                            className="flex-1 h-14 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
                             disabled={loading}
                         >
                             İPTAL ET
@@ -314,7 +314,7 @@ export function QuestionForm({ categories, onSuccess }: QuestionFormProps) {
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-black h-15 rounded-2xl shadow-2xl shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
+                            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-black h-14 rounded-2xl shadow-2xl shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
                         >
                             {loading ? (
                                 <>

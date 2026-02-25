@@ -245,7 +245,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                 </div>
                                 AI Soru Üretici
                             </DialogTitle>
-                            <DialogDescription className="text-zinc-500 text-sm font-medium mt-1 ml-13">
+                            <DialogDescription className="text-zinc-500 text-sm font-medium mt-1 ml-12">
                                 Yapay zeka motoru ile saniyeler içinde akademik kalitede sorular tasarlayın.
                             </DialogDescription>
                         </div>
@@ -317,7 +317,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     <Button
                                         variant="ghost"
                                         onClick={() => setStep('choice')}
-                                        className="flex-1 h-15 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
+                                        className="flex-1 h-14 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
                                     >
                                         GERİ DÖN
                                     </Button>
@@ -356,7 +356,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                         }}
                                         disabled={!manualTopic.trim() || subtopicsLoading}
 
-                                        className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black h-15 rounded-2xl shadow-2xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-2xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {subtopicsLoading ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
@@ -416,7 +416,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                     <Button
                                         variant="ghost"
                                         onClick={() => setStep('no-question')}
-                                        className="flex-1 h-15 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
+                                        className="flex-1 h-14 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
                                     >
                                         GERİ DÖN
                                     </Button>
@@ -438,7 +438,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                             setPrompt(finalPrompt);
                                             setStep('generate-options');
                                         }}
-                                        className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black h-15 rounded-2xl shadow-2xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
+                                        className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-2xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
                                     >
                                         <span>{selectedSubtopics.length > 0 ? `${selectedSubtopics.length} Başlıkla İlerle` : 'Tümüyle İlerle'}</span>
                                         <div className="bg-white/20 p-2 rounded-xl group-hover:bg-white/30 transition-colors">
@@ -956,14 +956,14 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                 <Button
                                     variant="ghost"
                                     onClick={() => step === 'generate-options' ? setStep('subtopics') : handleClose()}
-                                    className="flex-1 h-15 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
+                                    className="flex-1 h-14 rounded-2xl text-zinc-500 font-black hover:text-white hover:bg-white/5 transition-all"
                                     disabled={loading}
                                 >
                                     {step === 'generate-options' ? 'GERİ DÖN' : 'VAZGEÇ'}
                                 </Button>
                                 <Button
                                     onClick={() => handleGenerate()}
-                                    className={`flex-[2] text-white font-black h-15 rounded-2xl shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group ${step === 'generate-options' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'}`}
+                                    className={`flex-[2] text-white font-black h-14 rounded-2xl shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group ${step === 'generate-options' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'}`}
                                     disabled={loading}
                                 >
                                     {loading ? (

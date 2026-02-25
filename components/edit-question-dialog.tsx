@@ -147,7 +147,7 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                             </div>
                             Soruyu Güncelle
                         </DialogTitle>
-                        <p className="text-zinc-500 text-sm font-medium mt-1 ml-13">
+                        <p className="text-zinc-500 text-sm font-medium mt-1 ml-12">
                             Mevcut sorunun içeriğini, seçeneklerini veya kategorisini düzenleyin.
                         </p>
                     </div>
@@ -360,7 +360,7 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                             variant="ghost"
                             onClick={handleDelete}
                             disabled={loading || deleting}
-                            className="flex-1 h-15 rounded-2xl text-red-500 font-black hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 h-14 rounded-2xl text-red-500 font-black hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
                         >
                             <Trash2 size={18} />
                             {deleting ? 'SİLİNİYOR...' : 'SİL'}
@@ -368,7 +368,7 @@ export function EditQuestionDialog({ question, categories, open, onOpenChange, o
                         <Button
                             type="submit"
                             disabled={loading || deleting}
-                            className="flex-[2] bg-white hover:bg-zinc-200 text-black font-black h-15 rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
+                            className="flex-[2] bg-white hover:bg-zinc-200 text-black font-black h-14 rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 group"
                         >
                             {loading ? (
                                 <>
