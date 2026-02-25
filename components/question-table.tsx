@@ -119,14 +119,16 @@ function OptionsGrid({ question, language }: { question: Question; language: 'tr
                 return (
                     <div
                         key={opt}
-                        className={`p-3 rounded-xl transition-all ${question.correctAnswer === opt
-                            ? 'bg-orange-500/10 border border-orange-500/30'
+                        className={`p-3 rounded-xl transition-all ${question.correctAnswer?.trim().toUpperCase() === opt
+                            ? 'bg-orange-500/10 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.05)]'
                             : 'bg-zinc-800/50 border border-transparent'
                             }`}
                     >
-                        <span className={`flex gap-2 ${question.correctAnswer === opt ? 'text-orange-500 font-semibold' : 'text-zinc-400'}`}>
-                            <span className="shrink-0">{opt})</span>
-                            <MathText text={optionText} />
+                        <span className={`flex gap-3 ${question.correctAnswer?.trim().toUpperCase() === opt ? 'text-orange-500 font-bold' : 'text-zinc-400'}`}>
+                            <span className="shrink-0 font-black opacity-60">{opt})</span>
+                            <div className="flex-1 font-medium">
+                                <MathText text={optionText} />
+                            </div>
                         </span>
                     </div>
                 )
@@ -165,6 +167,10 @@ function QuestionRow({ question, index, onEdit, onDelete, onVariantsGenerated, l
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
+
+    useEffect(() => {
+        setLocalLang(language)
+    }, [language])
 
     const handleGenerateVariants = async () => {
         setGeneratingVariants(true)

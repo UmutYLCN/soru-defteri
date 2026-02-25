@@ -16,10 +16,10 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
 
     const detectionPrompt = `Analyze this academic problem image. 
     Identify the primary technical diagram, circuit schematic, graph, table, or illustration that is essential for understanding or solving the problem. 
-    CRITICAL: If the image consists ONLY of text (even handwritten) without any graphics, return {"boundingBox": null}.
-    Otherwise, return a JSON object with the bounding box coordinates [ymin, xmin, ymax, xmax] normalized from 0 to 1000.
-    
-    Format: {"boundingBox": [ymin, xmin, ymax, xmax]}`;
+    CRITICAL: DO NOT return a bounding box for text, sentences, or mathematical formulas. 
+    If the image consists ONLY of text (printed or handwritten) without any actual graphics, drawings, or technical illustrations, return {"boundingBox": null}.
+    A successful bounding box MUST enclose a visual aid, NOT a block of text.
+    Return JSON object: {"boundingBox": [ymin, xmin, ymax, xmax]}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -44,7 +44,7 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
     const img = sharp(buffer);
     const metadata = await img.metadata();
 
-    if (!metadata.width || !metadata.height) return image;
+    if (!metadata.width || !metadata.height) return null;
 
     if (parsed.boundingBox && Array.isArray(parsed.boundingBox) && parsed.boundingBox.length === 4) {
       let [ymin, xmin, ymax, xmax] = parsed.boundingBox;
@@ -94,7 +94,8 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
     ${JSON.stringify(q, null, 2)}
     YOUR TASKS:
     1. RE-CALCULATION: Re-calculate everything from scratch. If it's a multi-step problem, verify EVERY intermediate value.
-    2. CORRECTNESS: Ensure the "correctAnswer" is mathematically and logically sound. Fix it and the options if necessary.
+    2. CORRECTNESS: Ensure the "correctAnswer" is mathematically and logically sound. 
+       CRITICAL: The "correctAnswer" MUST be ONLY a single uppercase letter: "A", "B", "C", or "D".
     3. RIGOR: Ensure the difficulty of the answer and solution matches or exceeds the question's level. Never simplify a complex problem.
     4. MANDATORY SOLUTION FORMAT: You MUST provide a professional, detailed, pedagogical breakdown using STEP_START/STEP_END tags for each phase. If the question is multi-step, the solution MUST show all those steps.
     5. REMOVE INNER MONOLOGUE: Return only the corrected JSON.
@@ -149,6 +150,12 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
       return text;
     };
 
+    const sanitizeCorrectAnswer = (ans: any) => {
+      if (typeof ans !== 'string') return "A";
+      const match = ans.match(/[A-D]/i);
+      return match ? match[0].toUpperCase() : "A";
+    };
+
     // Merge AI result with defaults, ensuring required fields are never undefined
     return {
       questionText: fixMath(aiResult.questionText || q.questionText || "Soru metni eksik."),
@@ -156,7 +163,7 @@ export async function verifyAndFixQuestion(q: any): Promise<any> {
       optionB: fixMath(aiResult.optionB || q.optionB || "B) Seçenek eksik"),
       optionC: fixMath(aiResult.optionC || q.optionC || "C) Seçenek eksik"),
       optionD: fixMath(aiResult.optionD || q.optionD || "D) Seçenek eksik"),
-      correctAnswer: aiResult.correctAnswer || q.correctAnswer || "A",
+      correctAnswer: sanitizeCorrectAnswer(aiResult.correctAnswer || q.correctAnswer),
       solution: fixMath(aiResult.solution || q.solution || null),
       questionTextEN: fixMath(aiResult.questionTextEN || q.questionTextEN || null),
       optionAEN: fixMath(aiResult.optionAEN || q.optionAEN || null),
@@ -224,7 +231,7 @@ export async function generate(
   3. DIFFICULTY MATCHING & PRESERVATION: The generated questions MUST match or exceed the intellectual rigor and complexity of the input. NEVER downgrade the difficulty.
   4. MANDATORY MULTI-STEP COMPLEXITY: If the original problem requires a multi-step analytical solution, your generated questions MUST also require a deep, multi-step process to solve.
   5. STRICT FIGURE INTEGRATION: If a diagram, graph, or schematic is provided, EVERY question MUST be strictly coupled to it. Analyzing the visual data must be mandatory for solving.
-  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer, solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
+  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
   7. MULTILINGUAL REQUIREMENT: Every single question MUST have high-quality content in both Turkish (main fields) and English (EN fields).
   8. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
   9. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.`;
@@ -310,7 +317,7 @@ export async function generateGroupedQuestions(
   2. RIGOR MATCHING: The generated scenario and its sub-questions MUST match or exceed the academic difficulty of the input. Do not simplify.
   3. MANDATORY MULTI-STEP INTERCONNECTION: The sub-questions must form a cohesive, complex scenario. If the input is multi-step, the scenario MUST require a chain of complex logical/mathematical steps.
   4. STRICT FIGURE INTEGRATION: The entire scenario MUST be built around the provided diagram/figure. It must be impossible to answer the questions without detailed visual analysis.
-  5. JSON FORMAT: Return ONLY a JSON object with fields: stemText (TR), stemTextEN (EN), questions (array of question objects with TR and EN versions).
+  5. JSON FORMAT: Return ONLY a JSON object with fields: stemText (TR), stemTextEN (EN), questions (array of question objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN)).
   6. MATH FORMATTING: Use LaTeX for ALL math. Inline: $...$, Block: $$...$$.
   7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.`;
 
@@ -360,6 +367,12 @@ export async function generateGroupedQuestions(
     const verifiedQuestions = await Promise.all(
       (parsed.questions || []).map(async (q: any) => {
         const fixed = await verifyAndFixQuestion(q);
+        const sanitizeCorrectAnswer = (ans: any) => {
+          if (typeof ans !== 'string') return "A";
+          const match = ans.match(/[A-D]/i);
+          return match ? match[0].toUpperCase() : "A";
+        };
+
         // Robust normalization to prevent Prisma errors
         return {
           questionText: fixed.questionText || q.questionText || "Soru metni bulunamadı.",
@@ -367,7 +380,7 @@ export async function generateGroupedQuestions(
           optionB: fixed.optionB || q.optionB || "B) Seçenek eksik",
           optionC: fixed.optionC || q.optionC || "C) Seçenek eksik",
           optionD: fixed.optionD || q.optionD || "D) Seçenek eksik",
-          correctAnswer: fixed.correctAnswer || q.correctAnswer || "A",
+          correctAnswer: sanitizeCorrectAnswer(fixed.correctAnswer || q.correctAnswer),
           solution: fixed.solution || q.solution || null,
           questionTextEN: fixed.questionTextEN || q.questionTextEN || null,
           optionAEN: fixed.optionAEN || q.optionAEN || null,
@@ -449,8 +462,10 @@ export async function generateVariants(originalQuestion: any, count: number, use
   const systemPrompt = `Generate ${count} variations of this question:
   ${JSON.stringify(originalQuestion)}
   ${uniquenessConstraint}
-  CRITICAL: You MUST generate each variation in BOTH Turkish and English, filling all TR and EN fields appropriately.
-  Return JSON array of question objects (e.g., {"questions": [...]}).`;
+  CRITICAL INSTRUCTIONS:
+  1. CORRECT ANSWER: The "correctAnswer" field MUST be ONLY a single uppercase letter: "A", "B", "C", or "D".
+  2. MULTILINGUAL: You MUST generate each variation in BOTH Turkish and English, filling all TR and EN fields.
+  3. JSON FORMAT: Return a JSON object like {"questions": [...]}. Each object in the array MUST have all fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, solution, questionTextEN, optionAEN, optionBEN, optionCEN, optionDEN, solutionEN.`;
 
   try {
     const response = await openai.chat.completions.create({

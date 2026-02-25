@@ -60,6 +60,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     const [subtopics, setSubtopics] = useState<string[]>([])
     const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([])
     const [subtopicsLoading, setSubtopicsLoading] = useState(false)
+    const [confirmedHasDiagram, setConfirmedHasDiagram] = useState(false)
 
     // Interactive Crop States
     const [step, setStep] = useState<'choice' | 'input' | 'no-question' | 'subtopics' | 'generate-options' | 'confirm' | 'crop'>('choice')
@@ -125,14 +126,19 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                 const { hasDiagram } = await analyzeRes.json()
 
                 if (hasDiagram) {
+                    setConfirmedHasDiagram(true)
                     setStep('confirm')
                     setLoading(false)
                     return
+                } else {
+                    setConfirmedHasDiagram(false)
                 }
             }
 
-            const activeImage = useCroppedImage || image
-            const originalContextImage = useCroppedImage ? image : null
+            // If we have a cropped image, we use it. If not, we only ATTACH the image if a diagram was confirmed.
+            // Otherwise, we pass the full image as originalContextImage for AI analysis/transcription only.
+            const activeImage = useCroppedImage || (confirmedHasDiagram ? image : null)
+            const originalContextImage = image // Always send for AI vision analysis
             const endpoint = mode === 'normal' ? '/api/generate' : '/api/generate-grouped'
             const body = mode === 'normal'
                 ? {
