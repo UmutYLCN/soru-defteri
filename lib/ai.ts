@@ -219,7 +219,7 @@ export async function generate(
     ? `\nSTRICT UNIQUENESS: The user already has these questions in this category: [${existingQuestions.join(' | ')}]. YOU MUST NOT repeat any of these. Ensure entirely new scenarios, variables, and logical paths.`
     : "";
 
-  const basePrompt = image
+  const basePrompt = (image || originalImage)
     ? `You MUST first transcribe the ORIGINAL question exactly as it appears in the image in BOTH Turkish and English. AND THEN create ${count} additional NEW ${questionType} multiple choice questions in BOTH Turkish and English based on the same context and difficulty. Thus, you will return a total of ${count + 1} questions (each with TR and EN versions). ${uniquenessConstraint}`
     : `Create ${count} ${questionType} multiple choice questions in BOTH Turkish and English. ${uniquenessConstraint}`;
 
@@ -234,7 +234,8 @@ export async function generate(
   6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
   7. MULTILINGUAL REQUIREMENT: Every single question MUST have high-quality content in both Turkish (main fields) and English (EN fields).
   8. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
-  9. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.`;
+  9. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.
+  10. VARIABLE VARIATION: Ensure that each generated question uses different numerical values, constants, and variables to ensure variety across the set. All questions must be distinct from one another.`;
 
   try {
     const userContent: any[] = [
@@ -308,7 +309,9 @@ export async function generateGroupedQuestions(
     ? `\nSTRICT UNIQUENESS: Ensure this new scenario and its questions are completely distinct from these existing ones: [${existingQuestions.slice(0, 15).join(' | ')}].`
     : "";
 
-  const basePrompt = `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem). ${uniquenessConstraint}`;
+  const basePrompt = (image || originalImage)
+    ? `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem) BASED ON THE PROVIDED IMAGE. ${uniquenessConstraint}`
+    : `Create a group of ${subQuestionCount} interconnected Turkish and English questions (like a scenario with shared diagram/stem). ${uniquenessConstraint}`;
   const systemPrompt = `You are an elite academic professor and an expert exam question writer.
   ${basePrompt}
   
@@ -319,7 +322,8 @@ export async function generateGroupedQuestions(
   4. STRICT FIGURE INTEGRATION: The entire scenario MUST be built around the provided diagram/figure. It must be impossible to answer the questions without detailed visual analysis.
   5. JSON FORMAT: Return ONLY a JSON object with fields: stemText (TR), stemTextEN (EN), questions (array of question objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN)).
   6. MATH FORMATTING: Use LaTeX for ALL math. Inline: $...$, Block: $$...$$.
-  7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.`;
+  7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.
+  8. VARIABLE VARIATION: Ensure that the questions use different numerical data points and variables where applicable, ensuring each question provides a unique challenge within the scenario.`;
 
   try {
     const userContent: any[] = [

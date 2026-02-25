@@ -104,9 +104,6 @@ export default function Dashboard() {
 
       if (!questionsRes.ok) console.error('Questions API Error:', questionsData.message || questionsData.error)
       if (!categoriesRes.ok) console.error('Categories API Error:', categoriesData.message || categoriesData.error)
-      if (profileData.error) {
-        console.error('Profile Data Error:', profileData.error, profileData.message)
-      }
 
       setQuestions(Array.isArray(questionsData) ? questionsData : [])
       setCategories(Array.isArray(categoriesData) ? categoriesData : [])

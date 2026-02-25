@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         const { prompt, count, questionType, categoryId, image, originalImage } = await req.json()
         const questionCount = parseInt(count) || 1
 
-        if (!prompt && !image) {
+        if (!prompt && !image && !originalImage) {
             return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
         }
 
