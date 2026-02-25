@@ -21,7 +21,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Prompt or image is required' }, { status: 400 })
         }
 
-        if (!subQuestionCount || subQuestionCount < 2 || subQuestionCount > 5) {
+        if (!questionCount || questionCount < 2 || questionCount > 5) {
             return NextResponse.json({ error: 'Sub-question count must be between 2 and 5' }, { status: 400 })
         }
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Yetersiz kredi. Lütfen planınızı yükseltin.' }, { status: 403 })
         }
 
-        const result = await generateGroupedQuestions(prompt, image, subQuestionCount, originalImage, user.id, categoryId ? parseInt(categoryId) : undefined)
+        const result = await generateGroupedQuestions(prompt, image, questionCount, originalImage, user.id, categoryId ? parseInt(categoryId) : undefined)
 
         // Create the QuestionGroup first
         const { data: group, error: groupError } = await supabase

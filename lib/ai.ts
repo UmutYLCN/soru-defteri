@@ -237,7 +237,7 @@ export async function generate(
   3. DIFFICULTY MATCHING & PRESERVATION: The generated questions MUST match or exceed the intellectual rigor and complexity of the input. NEVER downgrade the difficulty.
   4. MANDATORY MULTI-STEP COMPLEXITY: If the original problem requires a multi-step analytical solution, your generated questions MUST also require a deep, multi-step process to solve.
   5. STRICT FIGURE INTEGRATION: If a diagram, graph, or schematic is provided, EVERY question MUST be strictly coupled to it. Analyzing the visual data must be mandatory for solving.
-  6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
+  6. JSON FORMAT: ALWAYS return a JSON object with a "questions" key containing an array, even if there is only 1 question. Example: {"questions": [{...}]}. Each object must have: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
   7. MULTILINGUAL REQUIREMENT: Every single question MUST have high-quality content in both Turkish (main fields) and English (EN fields).
   8. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
   9. LOGICAL WORKFLOW: For every question, you MUST follow this sequence internally:
@@ -290,7 +290,22 @@ export async function generate(
 
     let text = genResponse.choices[0].message.content || "[]";
     let parsed = JSON.parse(text);
-    const questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
+
+    // OpenAI with json_object format can return:
+    // 1. An array directly: [{...}, {...}]  ← most common for count > 1
+    // 2. A wrapper object: { "questions": [{...}] }
+    // 3. A single question object: { "questionText": "...", ... }  ← happens with count=1
+    let questions: any[];
+    if (Array.isArray(parsed)) {
+      questions = parsed;
+    } else if (Array.isArray(parsed.questions)) {
+      questions = parsed.questions;
+    } else if (parsed.questionText) {
+      // Single question returned directly — wrap it in an array
+      questions = [parsed];
+    } else {
+      questions = [];
+    }
 
     const verifiedQuestions = await Promise.all(
       questions.map(async (q: any) => {
@@ -490,7 +505,16 @@ export async function generateVariants(originalQuestion: any, count: number, use
     });
 
     let parsed = JSON.parse(response.choices[0].message.content || "[]");
-    const variants = Array.isArray(parsed) ? parsed : (parsed.questions || []);
+    let variants: any[];
+    if (Array.isArray(parsed)) {
+      variants = parsed;
+    } else if (Array.isArray(parsed.questions)) {
+      variants = parsed.questions;
+    } else if (parsed.questionText) {
+      variants = [parsed];
+    } else {
+      variants = [];
+    }
 
     return await Promise.all(variants.map((v: any) => verifyAndFixQuestion(v)));
   } catch (e) {

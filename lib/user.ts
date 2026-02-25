@@ -37,8 +37,9 @@ export async function ensureUserExists(authUser: {
             image,
             lastLoginAt: now,
             updatedAt: now,
-            // If new user, give 1000 credits (temporary test mode)
-            credits: existingUser ? existingUser.credits : 1000,
+            // If new user → 1000 credits. If existing user with 0 or depleted credits → reset to 1000.
+            // This handles old accounts created under the previous 10-question free limit.
+            credits: existingUser ? (existingUser.credits <= 0 ? 1000 : existingUser.credits) : 1000,
         }, { onConflict: 'id' })
         .select()
         .single()
