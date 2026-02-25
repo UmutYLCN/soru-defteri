@@ -50,7 +50,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
     const [image, setImage] = useState<string | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [questionType, setQuestionType] = useState('Karışık')
-    const [count, setCount] = useState('5')
+    const [count, setCount] = useState('1')
     const [integratedCount, setIntegratedCount] = useState('3')
     const [categoryId, setCategoryId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
@@ -172,7 +172,6 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
             onSuccess()
             handleClose()
         } catch (err: any) {
-            setOpen(false)
             setError(err.message)
             setLoading(false)
         }
@@ -667,6 +666,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                                 <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[20px]">
                                                     {mode === 'normal' ? (
                                                         <>
+                                                            <SelectItem value="1" className="py-3 rounded-lg font-bold">1 Soru</SelectItem>
                                                             <SelectItem value="3" className="py-3 rounded-lg font-bold">3 Soru</SelectItem>
                                                             <SelectItem value="5" className="py-3 rounded-lg font-bold">5 Soru</SelectItem>
                                                             <SelectItem value="10" className="py-3 rounded-lg font-bold">10 Soru</SelectItem>
@@ -838,6 +838,7 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
                                                 <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-[20px]">
                                                     {mode === 'normal' ? (
                                                         <>
+                                                            <SelectItem value="1" className="py-3 rounded-lg font-bold">1 Soru</SelectItem>
                                                             <SelectItem value="3" className="py-3 rounded-lg font-bold">3 Soru</SelectItem>
                                                             <SelectItem value="5" className="py-3 rounded-lg font-bold">5 Soru</SelectItem>
                                                             <SelectItem value="10" className="py-3 rounded-lg font-bold">10 Soru</SelectItem>
