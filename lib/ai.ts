@@ -226,13 +226,13 @@ export async function generate(
     : "";
 
   const basePrompt = (image || originalImage)
-    ? `You MUST first transcribe the ORIGINAL question exactly as it appears in the image in BOTH Turkish and English. AND THEN create ${count} additional NEW ${questionType} multiple choice questions in BOTH Turkish and English based on the same context and difficulty. Thus, you will return a total of ${count + 1} questions (each with TR and EN versions). ${uniquenessConstraint}`
-    : `Create ${count} ${questionType} multiple choice questions in BOTH Turkish and English. ${uniquenessConstraint}`;
+    ? `Your task has TWO mandatory parts. PART 1 (Transcription): Transcribe the original question from the image EXACTLY as it appears, in both Turkish and English. This is question #1 in your output. PART 2 (Generation): Create EXACTLY ${count} brand new ${questionType} questions in both Turkish and English, inspired by the same topic/difficulty. These are questions #2 through #${count + 1}. YOU MUST return a total of EXACTLY ${count + 1} questions — no more, no fewer. ${uniquenessConstraint}`
+    : `Create EXACTLY ${count} ${questionType} multiple choice questions in BOTH Turkish and English. ${uniquenessConstraint}`;
 
   const systemPrompt = `You are an elite academic professor and an expert exam question writer. ${basePrompt}
   
   CRITICAL INSTRUCTIONS:
-  1. TRANSCRIPTION: If an image is provided, your first generated question MUST be an exact transcription and academic formulation of the question explicitly shown in that image.
+  1. QUESTION ORDER: If an image is provided, question #1 in the "questions" array MUST be the exact transcription of the original question. Questions #2 onward are the newly generated variations. This order is mandatory.
   2. DEEP ANALYSIS: Analyze the input (text or image) thoroughly. Identify the academic level (e.g., Undergraduate Physics, Graduate Math).
   3. DIFFICULTY MATCHING & PRESERVATION: The generated questions MUST match or exceed the intellectual rigor and complexity of the input. NEVER downgrade the difficulty.
   4. MANDATORY MULTI-STEP COMPLEXITY: If the original problem requires a multi-step analytical solution, your generated questions MUST also require a deep, multi-step process to solve.
