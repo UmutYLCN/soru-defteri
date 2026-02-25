@@ -1019,5 +1019,4 @@ export function AIGenerator({ categories, onSuccess }: AIGeneratorProps) {
             </AnimatePresence>
         </Fragment>
     )
-
 }

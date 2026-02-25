@@ -89,27 +89,33 @@ async function extractDiagramFromImage(image: string): Promise<string | null> {
  */
 export async function verifyAndFixQuestion(q: any): Promise<any> {
   try {
-    const verifyPrompt = `You are a strict academic auditor and subject matter expert. Review the following multiple-choice question.
-    QUESTION DATA:
+    const verifyPrompt = `You are a world-class academic validator. Your task is to audit this multiple-choice question for absolute mathematical and logical accuracy.
+    
+    QUESTION DATA TO AUDIT:
     ${JSON.stringify(q, null, 2)}
-    YOUR TASKS:
-    1. RE-CALCULATION: Re-calculate everything from scratch. If it's a multi-step problem, verify EVERY intermediate value.
-    2. CORRECTNESS: Ensure the "correctAnswer" is mathematically and logically sound. 
-       CRITICAL: The "correctAnswer" MUST be ONLY a single uppercase letter: "A", "B", "C", or "D".
-    3. RIGOR: Ensure the difficulty of the answer and solution matches or exceeds the question's level. Never simplify a complex problem.
-    4. MANDATORY SOLUTION FORMAT: You MUST provide a professional, detailed, pedagogical breakdown using STEP_START/STEP_END tags for each phase. If the question is multi-step, the solution MUST show all those steps.
-    5. REMOVE INNER MONOLOGUE: Return only the corrected JSON.
-    6. CRITICAL LaTeX formatting rules:
-       - Every single math expression, variable, number with units, or formula MUST be wrapped in dollar signs.
-       - Use $...$ for inline math. Example: "The force is $F = 5$ N"
-       - Use $$...$$ for standalone formulas.
-       - Plain text should remain plain, only math/formulas/variables go inside $.
-    7. MULTILINGUAL PRESERVATION: You MUST preserve and verify both "questionText" (Turkish) and "questionTextEN" (English) fields, along with their respective options and solutions. If one is missing or incorrect, translate/fix it.
-    Return corrected question data in the exact same JSON format.`;
+    
+    VALIDATION PROTOCOL (CRITICAL):
+    1. INTERNAL DERIVATION: Independently solve the problem from scratch. Do not trust the provided values.
+    2. OPTION CONSISTENCY: The numerical value of your calculated answer MUST exist as one of the options (A, B, C, or D). If it does not, you MUST REWRITE the options to include the correct answer.
+    3. CORRECT ANSWER SYNC: The "correctAnswer" field MUST point to the option that contains your calculated correct value.
+    4. DISTRACTOR CHECK: Ensure the other three options are incorrect but plausible.
+    5. LaTeX RIGOR: 
+       - All math/variables MUST be in LaTeX ($...$ for inline, $$...$$ for blocks).
+       - Never use plain text for numbers followed by units (e.g., use $5$ kg, not 5 kg).
+    6. SOLUTION ARCHITECTURE: The solution MUST be a professional pedagogical breakdown using STEP_START and STEP_END tags. It must match your internal derivation EXACTLY.
+    7. MULTILINGUAL SYNC: Ensure the Turkish and English versions are identical in meaning and numerical values.
+    
+    Return the corrected data in the exact same JSON format.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: verifyPrompt }],
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert math and science auditor. You must think step-by-step through the problem before outputting the final JSON. Ensure the options and the correct answer are perfectly synced with the calculation."
+        },
+        { role: "user", content: verifyPrompt }
+      ],
       response_format: { type: "json_object" }
     });
 
@@ -234,8 +240,12 @@ export async function generate(
   6. JSON FORMAT: Return ONLY a JSON array of objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN).
   7. MULTILINGUAL REQUIREMENT: Every single question MUST have high-quality content in both Turkish (main fields) and English (EN fields).
   8. MATH FORMATTING: Use LaTeX for ALL math. Wrap inline math/variables in single dollar signs like $x$. Wrap complex formulas in double dollar signs.
-  9. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.
-  10. VARIABLE VARIATION: Ensure that each generated question uses different numerical values, constants, and variables to ensure variety across the set. All questions must be distinct from one another.`;
+  9. LOGICAL WORKFLOW: For every question, you MUST follow this sequence internally:
+     a) Design the Question.
+     b) Derive the full Solution step-by-step.
+     c) Create the Options (A, B, C, D) based ON the result of your solution to ensure they are 100% correct.
+  10. SOLUTION STRUCTURE: Every solution MUST be a professional, detailed pedagogical breakdown using STEP_START and STEP_END for each logical phase.
+  11. VARIABLE VARIATION: Ensure that each generated question uses different numerical values, constants, and variables to ensure variety across the set. All questions must be distinct from one another.`;
 
   try {
     const userContent: any[] = [
@@ -322,8 +332,9 @@ export async function generateGroupedQuestions(
   4. STRICT FIGURE INTEGRATION: The entire scenario MUST be built around the provided diagram/figure. It must be impossible to answer the questions without detailed visual analysis.
   5. JSON FORMAT: Return ONLY a JSON object with fields: stemText (TR), stemTextEN (EN), questions (array of question objects with fields: questionText (TR), optionA (TR), optionB (TR), optionC (TR), optionD (TR), correctAnswer (ONLY 'A', 'B', 'C', or 'D'), solution (TR), questionTextEN (EN), optionAEN (EN), optionBEN (EN), optionCEN (EN), optionDEN (EN), solutionEN (EN)).
   6. MATH FORMATTING: Use LaTeX for ALL math. Inline: $...$, Block: $$...$$.
-  7. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.
-  8. VARIABLE VARIATION: Ensure that the questions use different numerical data points and variables where applicable, ensuring each question provides a unique challenge within the scenario.`;
+  7. LOGICAL WORKFLOW: Follow the sequence 'Question -> Full Solution -> Options' for each sub-question to ensure accuracy.
+  8. SOLUTION STRUCTURE: For every question, the solution MUST be a detailed, pedagogical breakdown using STEP_START and STEP_END tags for each logical phase. Multi-step problems MUST have multi-step solutions.
+  9. VARIABLE VARIATION: Ensure that the questions use different numerical data points and variables where applicable, ensuring each question provides a unique challenge within the scenario.`;
 
   try {
     const userContent: any[] = [
